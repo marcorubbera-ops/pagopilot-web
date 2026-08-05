@@ -1,0 +1,151 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * PagoPilot design system — Apple / iOS Human Interface inspired.
+ * All colors are oklch semantic tokens. Never hardcode colors in components.
+ */
+
+@theme inline {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+  --radius-3xl: calc(var(--radius) + 20px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -12px oklch(0 0 0 / 0.12);
+  --shadow-float: 0 12px 32px -8px oklch(0.55 0.2 258 / 0.35);
+}
+
+:root {
+  --radius: 1rem;
+  /* #F5F5F7 */
+  --background: oklch(0.968 0.001 286);
+  --foreground: oklch(0.18 0.01 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.01 265);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.01 265);
+  /* #0A84FF */
+  --primary: oklch(0.628 0.203 258.3);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.94 0.003 286);
+  --secondary-foreground: oklch(0.28 0.01 265);
+  --muted: oklch(0.94 0.003 286);
+  /* #8E8E93 */
+  --muted-foreground: oklch(0.63 0.006 286);
+  --accent: oklch(0.94 0.01 258);
+  --accent-foreground: oklch(0.35 0.09 258);
+  /* #FF3B30 */
+  --destructive: oklch(0.629 0.234 29.2);
+  --destructive-foreground: oklch(1 0 0);
+  /* #34C759 */
+  --success: oklch(0.755 0.183 145.5);
+  --success-foreground: oklch(1 0 0);
+  /* #FF9500 */
+  --warning: oklch(0.762 0.164 63.1);
+  --warning-foreground: oklch(0.22 0.05 63);
+  --border: oklch(0.9 0.003 286);
+  --input: oklch(0.9 0.003 286);
+  --ring: oklch(0.628 0.203 258.3);
+  --chart-1: oklch(0.628 0.203 258.3);
+  --chart-2: oklch(0.755 0.183 145.5);
+  --chart-3: oklch(0.762 0.164 63.1);
+  --chart-4: oklch(0.629 0.234 29.2);
+  --chart-5: oklch(0.6 0.18 300);
+}
+
+.dark {
+  --background: oklch(0.16 0.005 285);
+  --foreground: oklch(0.98 0.002 286);
+  --card: oklch(0.22 0.006 285);
+  --card-foreground: oklch(0.98 0.002 286);
+  --popover: oklch(0.22 0.006 285);
+  --popover-foreground: oklch(0.98 0.002 286);
+  --primary: oklch(0.66 0.19 258.3);
+  --primary-foreground: oklch(0.14 0.02 258);
+  --secondary: oklch(0.27 0.006 285);
+  --secondary-foreground: oklch(0.98 0.002 286);
+  --muted: oklch(0.27 0.006 285);
+  --muted-foreground: oklch(0.68 0.006 286);
+  --accent: oklch(0.3 0.03 258);
+  --accent-foreground: oklch(0.9 0.06 258);
+  --destructive: oklch(0.66 0.21 29.2);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.74 0.17 145.5);
+  --success-foreground: oklch(0.15 0.05 145);
+  --warning: oklch(0.78 0.15 63.1);
+  --warning-foreground: oklch(0.2 0.05 63);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.66 0.19 258.3);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
+/* Frosted glass surface used by the nav bar and tab bar. */
+@utility glass {
+  background-color: color-mix(in oklab, var(--color-background) 72%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Grouped-list card, like iOS inset table sections. */
+@utility ios-card {
+  background-color: var(--color-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+@utility large-title {
+  font-size: 1.875rem;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}

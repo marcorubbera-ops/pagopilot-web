@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PagoPilot</string>
+    <string name="title_activity_main">PagoPilot</string>
+    <string name="package_name">com.pagopilot.app</string>
+    <string name="custom_url_scheme">com.pagopilot.app</string>
+</resources>
