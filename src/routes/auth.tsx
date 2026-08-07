@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { LanguageSwitcher } from "@/components/AppShell";
 
 export const Route = createFileRoute("/auth")({
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,7 +51,7 @@ function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: window.location.origin, data: { lang } },
         });
         if (error) throw error;
         if (!data.session) {
@@ -62,7 +63,7 @@ function AuthPage() {
         if (error) throw error;
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("auth.error"));
+      toast.error(authErrorMessage(error, t));
     } finally {
       setBusy(false);
     }
@@ -77,7 +78,7 @@ const google = async () => {
   });
 
   if (error) {
-    toast.error(error.message);
+    toast.error(authErrorMessage(error, t));
   }
 };
 

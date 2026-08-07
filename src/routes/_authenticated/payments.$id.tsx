@@ -59,6 +59,7 @@ function PaymentDetailPage() {
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["payments"] });
     void queryClient.invalidateQueries({ queryKey: ["payment", id] });
+    void queryClient.invalidateQueries({ queryKey: ["reminders"] });
   };
 
   const status = useMutation({

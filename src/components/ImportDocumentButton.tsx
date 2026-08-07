@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Camera, FileText, Image as ImageIcon, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ImportMultiDialog } from "@/components/ImportMultiDialog";
 import { PremiumDialog } from "@/components/PremiumDialog";
 import { QuickAddDialog, type FormShape } from "@/components/QuickAddDialog";
 import { ScanDialog } from "@/components/ScanDialog";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
-import { extractPaymentFromDocument } from "@/lib/documents.functions";
+import { extractPaymentFromDocument, type ExtractedPayment } from "@/lib/documents.functions";
 import { readQrFromImage } from "@/lib/pagopa-qr";
 import { attachDocument, createPayment } from "@/lib/payments.functions";
 import { getProfile } from "@/lib/profile.functions";
@@ -54,6 +55,8 @@ export function ImportDocumentButton({ className }: { className?: string }) {
   const [upload, setUpload] = useState<{ path: string; kind: "image" | "pdf" } | null>(null);
   const [qrPayload, setQrPayload] = useState<string | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
+  const [multiOpen, setMultiOpen] = useState(false);
+  const [multiItems, setMultiItems] = useState<ExtractedPayment[]>([]);
 
   const { data: account } = useQuery({ queryKey: ["profile"], queryFn: () => fetchProfile() });
 
@@ -73,6 +76,37 @@ export function ImportDocumentButton({ className }: { className?: string }) {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  function toPaymentValues(item: ExtractedPayment, index: number): PaymentFormValues {
+    const category =
+      item.category && (CATEGORY_IDS as readonly string[]).includes(item.category)
+        ? item.category
+        : "other";
+    return {
+      title: item.title ?? `Pagamento ${index + 1}`,
+      entity: item.entity ?? null,
+      amount: item.amount ?? 0,
+      due_date: /^\d{4}-\d{2}-\d{2}$/.test(item.due_date ?? "") ? item.due_date! : null,
+      category,
+      notice_number: item.notice_number ? item.notice_number.replace(/\s+/g, "") : null,
+      tax_code: item.tax_code ? item.tax_code.replace(/\s+/g, "") : null,
+      iban: item.iban ? item.iban.replace(/\s+/g, "") : null,
+      notes: item.description ?? null,
+      tags: [],
+    };
+  }
+
+  async function handleImportMulti(items: ExtractedPayment[]) {
+    for (const [index, item] of items.entries()) {
+      const created = await addPayment({ data: toPaymentValues(item, index) });
+      if (upload) await attach({ data: { id: created.id, path: upload.path, kind: upload.kind } });
+    }
+    toast.success(t("form.saved"));
+    setUpload(null);
+    void queryClient.invalidateQueries({ queryKey: ["payments"] });
+    void queryClient.invalidateQueries({ queryKey: ["profile"] });
+    void queryClient.invalidateQueries({ queryKey: ["reminders"] });
+  }
 
   async function handleFile(file: File) {
     if (file.size > MAX_BYTES) {
@@ -97,10 +131,20 @@ export function ImportDocumentButton({ className }: { className?: string }) {
       // Photos and PDFs both go through AI extraction.
       setBusy("analyzing");
       const dataUrl = await readAsDataUrl(file);
-      const [extracted, qr] = await Promise.all([
+      const [extractedList, qr] = await Promise.all([
         extract({ data: { dataUrl, filename: file.name, lang } }),
         isPdf ? Promise.resolve(null) : readQrFromImage(file),
       ]);
+
+      if (extractedList.length > 1) {
+        // Multiple distinct payments in one document (e.g. several
+        // installments) — review as a list instead of one prefilled form.
+        setMultiItems(extractedList);
+        setMultiOpen(true);
+        return;
+      }
+
+      const extracted = extractedList[0] ?? {};
       const category =
         extracted.category && (CATEGORY_IDS as readonly string[]).includes(extracted.category)
           ? extracted.category
@@ -120,7 +164,6 @@ export function ImportDocumentButton({ className }: { className?: string }) {
         notes: extracted.description ?? "",
       };
       toast.success(qr ? t("import.successQr") : t("import.success"));
-
 
       setPrefill(values);
       setFormOpen(true);
@@ -232,6 +275,13 @@ export function ImportDocumentButton({ className }: { className?: string }) {
         title={t("import.review")}
         description={t("import.hint")}
         onSubmit={(values) => create.mutateAsync(values)}
+      />
+
+      <ImportMultiDialog
+        open={multiOpen}
+        onOpenChange={setMultiOpen}
+        items={multiItems}
+        onImport={handleImportMulti}
       />
     </>
   );

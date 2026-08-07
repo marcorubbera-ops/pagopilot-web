@@ -8,12 +8,15 @@
  * Entitlement + offering identifiers must match the RevenueCat dashboard.
  */
 import type { CustomerInfo, Offering, Package, Purchases } from "@revenuecat/purchases-js";
+import {
+  PREMIUM_ENTITLEMENT,
+  type PlanId,
+  type PurchaseOutcome,
+  type RemotePlan,
+} from "@/lib/revenuecat-types";
 
 /** Web Billing public API key. Publishable — safe in client code. */
 export const REVENUECAT_WEB_API_KEY = "";
-
-/** Entitlement that unlocks PagoPilot Premium. */
-export const PREMIUM_ENTITLEMENT = "premium";
 
 /** True when a Web Billing key has been configured. */
 export function revenueCatConfigured(): boolean {
@@ -21,9 +24,11 @@ export function revenueCatConfigured(): boolean {
 }
 
 let instance: Purchases | null = null;
+/** Packages from the last fetchPlans() call, keyed by plan id, so purchasePlan() can look them up by id alone. */
+let packageCache = new Map<PlanId, Package>();
 
 /** Configures (once) the SDK for the given user id and returns the instance. */
-export async function getPurchases(appUserId: string): Promise<Purchases> {
+async function getPurchases(appUserId: string): Promise<Purchases> {
   const { Purchases: SDK } = await import("@revenuecat/purchases-js");
   if (!instance) {
     instance = SDK.configure({ apiKey: REVENUECAT_WEB_API_KEY, appUserId });
@@ -35,52 +40,53 @@ export async function getPurchases(appUserId: string): Promise<Purchases> {
   return instance;
 }
 
-export type PlanId = "monthly" | "yearly" | "lifetime";
-
-export type RemotePlan = {
-  id: PlanId;
-  price: string;
-  pkg: Package;
-};
-
-/** Maps the current offering's packages onto PagoPilot's three plans. */
-export function plansFromOffering(offering: Offering | null): RemotePlan[] {
-  if (!offering) return [];
+function packagesFromOffering(offering: Offering | null): Map<PlanId, Package> {
+  const map = new Map<PlanId, Package>();
   const pairs: [PlanId, Package | null][] = [
-    ["monthly", offering.monthly ?? null],
-    ["yearly", offering.annual ?? null],
-    ["lifetime", offering.lifetime ?? null],
+    ["monthly", offering?.monthly ?? null],
+    ["yearly", offering?.annual ?? null],
+    ["lifetime", offering?.lifetime ?? null],
   ];
-  return pairs.flatMap(([id, pkg]) =>
-    pkg ? [{ id, price: pkg.webBillingProduct.currentPrice.formattedPrice, pkg }] : [],
-  );
+  for (const [id, pkg] of pairs) if (pkg) map.set(id, pkg);
+  return map;
+}
+
+function hasPremium(info: CustomerInfo): boolean {
+  return Boolean(info.entitlements.active[PREMIUM_ENTITLEMENT]);
 }
 
 /** Fetches the current offering's plans for a user. */
 export async function fetchPlans(appUserId: string): Promise<RemotePlan[]> {
   const purchases = await getPurchases(appUserId);
   const offerings = await purchases.getOfferings();
-  return plansFromOffering(offerings.current);
+  packageCache = packagesFromOffering(offerings.current);
+  return [...packageCache.entries()].map(([id, pkg]) => ({
+    id,
+    price: pkg.webBillingProduct.currentPrice.formattedPrice,
+  }));
 }
 
-/** Opens the RevenueCat billing view and resolves once the purchase completes. */
+/** Purchases the given plan and reports whether Premium is now active. */
 export async function purchasePlan(
   appUserId: string,
-  pkg: Package,
+  planId: PlanId,
   customerEmail?: string,
-): Promise<CustomerInfo> {
+): Promise<PurchaseOutcome> {
   const purchases = await getPurchases(appUserId);
+  let pkg = packageCache.get(planId);
+  if (!pkg) {
+    const offerings = await purchases.getOfferings();
+    packageCache = packagesFromOffering(offerings.current);
+    pkg = packageCache.get(planId);
+  }
+  if (!pkg) throw new Error(`Plan not available: ${planId}`);
   const result = await purchases.purchase({ rcPackage: pkg, customerEmail });
-  return result.customerInfo;
+  return { premium: hasPremium(result.customerInfo) };
 }
 
 /** Refreshes entitlements from RevenueCat (used by "restore purchases"). */
-export async function fetchCustomerInfo(appUserId: string): Promise<CustomerInfo> {
+export async function fetchCustomerInfo(appUserId: string): Promise<PurchaseOutcome> {
   const purchases = await getPurchases(appUserId);
-  return purchases.getCustomerInfo();
-}
-
-/** True when the premium entitlement is active. */
-export function hasPremium(info: CustomerInfo): boolean {
-  return Boolean(info.entitlements.active[PREMIUM_ENTITLEMENT]);
+  const info = await purchases.getCustomerInfo();
+  return { premium: hasPremium(info) };
 }

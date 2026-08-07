@@ -26,7 +26,6 @@ import { setPremium } from "@/lib/profile.functions";
 import {
   fetchCustomerInfo,
   fetchPlans,
-  hasPremium,
   purchasePlan,
   revenueCatConfigured,
   type PlanId,
@@ -74,8 +73,8 @@ export function PremiumDialog({
     mutationFn: async (id: Plan) => {
       const target = remotePlans?.find((option) => option.id === id);
       if (!target) throw new Error(t("premium.rc.unavailable"));
-      const info = await purchasePlan(user!.id, target.pkg, user?.email ?? undefined);
-      if (!hasPremium(info)) throw new Error(t("premium.rc.unavailable"));
+      const result = await purchasePlan(user!.id, id, user?.email ?? undefined);
+      if (!result.premium) throw new Error(t("premium.rc.unavailable"));
       return upgrade({ data: { premium: true } });
     },
     onSuccess: () => {
@@ -90,7 +89,7 @@ export function PremiumDialog({
     mutationFn: async () => {
       if (!billingLive || !user?.id) return false;
       const info = await fetchCustomerInfo(user.id);
-      const active = hasPremium(info);
+      const active = info.premium;
       await upgrade({ data: { premium: active } });
       return active;
     },
@@ -133,8 +132,15 @@ export function PremiumDialog({
   ];
 
   // Live prices from RevenueCat win over the hardcoded ones when available.
+  // No RevenueCat data yet, or an empty offering (e.g. no products configured
+  // in the dashboard yet), both fall back to showing every hardcoded plan.
   const plans = fallbackPlans
-    .filter((option) => !remotePlans || remotePlans.some((remote) => remote.id === option.id))
+    .filter(
+      (option) =>
+        !remotePlans ||
+        remotePlans.length === 0 ||
+        remotePlans.some((remote) => remote.id === option.id),
+    )
     .map((option) => {
       const remote = remotePlans?.find((item) => item.id === option.id);
       return remote ? { ...option, price: remote.price } : option;

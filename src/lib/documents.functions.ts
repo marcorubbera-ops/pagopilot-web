@@ -5,6 +5,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { extractPaymentWithGemini } from "@/lib/ai/gemini";
 
 const extractInput = z.object({
   /** Base64 data URL of an image (JPEG/PNG/WebP) or a PDF. */
@@ -14,7 +15,7 @@ const extractInput = z.object({
   lang: z.enum(["it", "en"]).default("it"),
 });
 
-const extracted = z.object({
+const extractedItem = z.object({
   title: z.string().nullable().optional(),
   entity: z.string().nullable().optional(),
   amount: z.number().nullable().optional(),
@@ -26,11 +27,13 @@ const extracted = z.object({
   description: z.string().nullable().optional(),
 });
 
-export type ExtractedPayment = z.infer<typeof extracted>;
+const extracted = z.array(extractedItem).min(1);
 
-const PROMPT = `You read Italian payment documents (utility bills, PagoPA notices "avviso di pagamento", F24 forms, receipts, invoices).
+export type ExtractedPayment = z.infer<typeof extractedItem>;
 
-Extract the payment details and reply with ONLY a JSON object, no markdown, with these keys:
+const PROMPT = `You read Italian payment documents (utility bills, PagoPA notices "avviso di pagamento", F24 forms, receipts, invoices). A document may contain ONE payment, or MULTIPLE distinct payments — e.g. several installments ("rate") of a payment plan, each with its own due date and amount.
+
+Reply with ONLY a JSON array, no markdown — even when there is just a single payment, wrap it in a one-item array. Each array item has these keys:
 
 title
 entity
@@ -44,7 +47,8 @@ description
 
 Rules:
 
-- title = short human-readable title
+- One array item per distinct due date + amount combination.
+- title = short human-readable title; include the installment number if present (e.g. "Rata 2/10 Agenzia Entrate")
 - entity = company/public body
 - amount = number only (17.20)
 - due_date = YYYY-MM-DD
@@ -62,14 +66,14 @@ subscriptions,
 business,
 other
 
-- notice_number = Codice Avviso (digits only)
+- notice_number = the payment-specific code for that installment (e.g. Codice Avviso, Codice modulo di pagamento), digits only
 - tax_code = creditor tax code
 - iban = IBAN if present
 - description = one short sentence
 
 Use null whenever you are unsure.
 
-Return ONLY JSON.`;
+Return ONLY the JSON array.`;
 
 export const extractPaymentFromDocument = createServerFn({
   method: "POST",
@@ -77,124 +81,25 @@ export const extractPaymentFromDocument = createServerFn({
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => extractInput.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env["GEMINI_API_KEY"];
-    console.log("GEMINI_API_KEY =", process.env["GEMINI_API_KEY"]);
-
     console.log("========== DOCUMENT EXTRACTION ==========");
-    console.log("Gemini key exists:", !!apiKey);
     console.log("Filename:", data.filename);
     console.log("Is PDF:", data.dataUrl.startsWith("data:application/pdf"));
     console.log("========================================");
 
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY not found");
-    }
+    const userPrompt =
+      data.lang === "it"
+        ? "Estrai tutti i pagamenti da questo documento."
+        : "Extract all the payments from this document.";
 
-    const isPdf = data.dataUrl.startsWith("data:application/pdf");
-
-    const documentBlock = isPdf
-      ? {
-          type: "file",
-          file: {
-            filename: data.filename,
-            file_data: data.dataUrl,
-          },
-        }
-      : {
-          type: "image_url",
-          image_url: {
-            url: data.dataUrl,
-          },
-        };
+    let parsed: unknown;
 
     try {
-      const response = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gemini-2.5-flash",
-            messages: [
-              {
-                role: "system",
-                content: PROMPT,
-              },
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "text",
-                    text:
-                      data.lang === "it"
-                        ? "Estrai i dati di pagamento da questo documento."
-                        : "Extract the payment details from this document.",
-                  },
-                  documentBlock,
-                ],
-              },
-            ],
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const detail = await response.text();
-
-        console.error("");
-        console.error("========== GEMINI ERROR ==========");
-        console.error("HTTP Status:", response.status);
-        console.error(detail);
-        console.error("==================================");
-        console.error("");
-
-        throw new Error(detail);
-      }
-
-      const payload = (await response.json()) as {
-        choices?: {
-          message?: {
-            content?: string;
-          };
-        }[];
-      };
-
-      console.log("========== GEMINI RESPONSE ==========");
-      console.log(JSON.stringify(payload, null, 2));
-      console.log("=====================================");
-
-      const raw = payload.choices?.[0]?.message?.content ?? "";
-
-      const json = raw.slice(
-        raw.indexOf("{"),
-        raw.lastIndexOf("}") + 1
-      );
-
-      if (!json) {
-        throw new Error("Gemini returned no JSON");
-      }
-
-      let parsed: unknown;
-
-      try {
-        parsed = JSON.parse(json);
-      } catch (err) {
-        console.error("JSON parse failed");
-        console.error(raw);
-        throw err;
-      }
-
-      const result = extracted.safeParse(parsed);
-
-      if (!result.success) {
-        console.error(result.error);
-        throw new Error("JSON validation failed");
-      }
-
-      return result.data;
+      parsed = await extractPaymentWithGemini({
+        dataUrl: data.dataUrl,
+        filename: data.filename,
+        systemPrompt: PROMPT,
+        userPrompt,
+      });
     } catch (err) {
       console.error("");
       console.error("========== SERVER ERROR ==========");
@@ -204,4 +109,13 @@ export const extractPaymentFromDocument = createServerFn({
 
       throw err;
     }
+
+    const result = extracted.safeParse(parsed);
+
+    if (!result.success) {
+      console.error(result.error);
+      throw new Error("JSON validation failed");
+    }
+
+    return result.data;
   });

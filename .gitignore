@@ -23,6 +23,9 @@ dist-ssr
 # Secrets — never commit real values. See .env.example for the required keys.
 .env
 
+# Personal test documents (real tax/payment notices) — local testing only.
+/test-documents/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

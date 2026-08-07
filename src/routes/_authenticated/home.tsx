@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { createPayment, listPayments } from "@/lib/payments.functions";
 import { listUpcomingReminders } from "@/lib/reminders.functions";
-import { useI18n } from "@/lib/i18n";
+import { LOCALES, useI18n, type Lang } from "@/lib/i18n";
 import {
   daysUntil,
   effectiveStatus,
@@ -65,9 +65,12 @@ function HomePage() {
 
   const rows = payments ?? [];
   const stats = summarize(rows);
+  const months = monthlyTotals(rows, lang);
   const recent = [...rows]
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
     .slice(0, 5);
+
+  const uniqueReminders = dedupeReminders(reminders ?? []);
 
   return (
     <AppShell
@@ -93,20 +96,31 @@ function HomePage() {
         <StatCard icon={CircleCheck} label={t("home.stat.paid")} value={String(stats.paid)} tone="success" filter="paid" />
       </div>
 
-      <div className="ios-card mb-6 flex items-center justify-between p-4">
-        <div>
-          <p className="text-[13px] text-muted-foreground">{t("home.thisMonth")}</p>
-          <p className="text-2xl font-bold tabular-nums">{formatAmount(stats.monthTotal, lang)}</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">
-            {stats.nextDue
-              ? t("home.nextReminder", {
-                  title: stats.nextDue.title,
-                  date: formatDate(stats.nextDue.due_date, lang) || t("due.none"),
-                })
-              : t("home.noReminders")}
-          </p>
-        </div>
-        <Wallet className="size-8 text-primary" strokeWidth={1.6} aria-hidden />
+      <div className="mb-6 -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {months.map((month, index) => (
+          <div
+            key={month.key}
+            className="ios-card flex min-w-[220px] shrink-0 snap-center items-center justify-between p-4"
+          >
+            <div>
+              <p className="text-[13px] capitalize text-muted-foreground">
+                {index === 0 ? t("home.thisMonth") : month.label}
+              </p>
+              <p className="text-2xl font-bold tabular-nums">{formatAmount(month.total, lang)}</p>
+              {index === 0 ? (
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  {stats.nextDue
+                    ? t("home.nextReminder", {
+                        title: stats.nextDue.title,
+                        date: formatDate(stats.nextDue.due_date, lang) || t("due.none"),
+                      })
+                    : t("home.noReminders")}
+                </p>
+              ) : null}
+            </div>
+            <Wallet className="size-8 shrink-0 text-primary" strokeWidth={1.6} aria-hidden />
+          </div>
+        ))}
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3">
@@ -121,13 +135,13 @@ function HomePage() {
         <ImportDocumentButton className="w-full" />
       </div>
 
-      {reminders && reminders.length > 0 ? (
+      {uniqueReminders.length > 0 ? (
         <section className="ios-card mb-6 overflow-hidden">
           <h2 className="border-b border-border/60 px-4 py-2.5 text-[13px] font-medium uppercase tracking-wide text-muted-foreground">
             {t("reminders.title")}
           </h2>
           <ul className="divide-y divide-border/60">
-            {reminders.slice(0, 3).map((reminder) => {
+            {uniqueReminders.slice(0, 3).map((reminder) => {
               const days = Math.round(
                 (new Date(reminder.notification_date).setHours(0, 0, 0, 0) -
                   new Date().setHours(0, 0, 0, 0)) /
@@ -240,4 +254,47 @@ function summarize(payments: Payment[]) {
   }
 
   return { due, soon, overdue, paid, monthTotal, nextDue };
+}
+
+type UpcomingReminders = Awaited<ReturnType<typeof listUpcomingReminders>>;
+
+/** Keeps only the soonest reminder per payment (the list is already sorted by date). */
+function dedupeReminders(reminders: UpcomingReminders): UpcomingReminders {
+  const seen = new Set<string>();
+  const unique: UpcomingReminders = [];
+  for (const reminder of reminders) {
+    const paymentId = reminder.payment?.id;
+    if (!paymentId || seen.has(paymentId)) continue;
+    seen.add(paymentId);
+    unique.push(reminder);
+  }
+  return unique;
+}
+
+/** Sums payment amounts due in each of the next `count` months, starting this month. */
+function monthlyTotals(payments: Payment[], lang: Lang, count = 6) {
+  const now = new Date();
+  const buckets = Array.from({ length: count }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() + index, 1);
+    return {
+      key: `${date.getFullYear()}-${date.getMonth()}`,
+      year: date.getFullYear(),
+      month: date.getMonth(),
+      label: new Intl.DateTimeFormat(LOCALES[lang], { month: "long", year: "numeric" }).format(
+        date,
+      ),
+      total: 0,
+    };
+  });
+
+  for (const payment of payments) {
+    if (!payment.due_date) continue;
+    const date = new Date(`${payment.due_date}T00:00:00`);
+    const bucket = buckets.find(
+      (b) => b.year === date.getFullYear() && b.month === date.getMonth(),
+    );
+    if (bucket) bucket.total += Number(payment.amount);
+  }
+
+  return buckets;
 }
