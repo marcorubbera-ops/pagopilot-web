@@ -123,6 +123,26 @@ export function dueLabel(dueDate: string | null, t: Translate): string {
 }
 
 /**
+ * Single-phrase status text for compact row badges — avoids the redundancy
+ * of pairing a status word with a due label that already says the same
+ * thing (e.g. "Scaduto · Scaduto da 3 giorni", "Scade oggi · Scade oggi").
+ */
+export function rowStatusText(t: Translate, status: PaymentStatus, dueDate: string | null): string {
+  if (status === "paid" || status === "archived" || status === "cancelled") {
+    return statusLabel(t, status);
+  }
+  if (status === "due_today" || status === "expired") {
+    return dueLabel(dueDate, t);
+  }
+  const days = daysUntil(dueDate);
+  if (days === null) return t("due.none");
+  if (status === "upcoming") {
+    return days === 1 ? t("row.upcomingTomorrow") : t("row.upcomingInDays", { days });
+  }
+  return t("row.pendingInDays", { days });
+}
+
+/**
  * Rebuilds the PagoPA QR payload from the stored notice data, so a payment
  * entered by hand can still show a scannable code.
  * Format: PAGOPA|002|<notice number>|<creditor fiscal code>|<amount in cents>

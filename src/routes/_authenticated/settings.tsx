@@ -125,7 +125,9 @@ function SettingsPage() {
               </span>
               {!premium && account?.importsLeft !== null && account?.importsLeft !== undefined ? (
                 <span className="block text-[13px] text-muted-foreground">
-                  {t("import.remaining", { count: account.importsLeft })}
+                  {account.importsLeft === 0
+                    ? t("import.remaining.none")
+                    : t("import.remaining", { count: account.importsLeft })}
                 </span>
               ) : null}
             </span>

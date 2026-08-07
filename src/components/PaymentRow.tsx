@@ -5,10 +5,9 @@ import {
   STATUS_TONES,
   TONE_CLASSES,
   categoryLabel,
-  dueLabel,
   effectiveStatus,
   formatAmount,
-  statusLabel,
+  rowStatusText,
   type Payment,
 } from "@/lib/payments";
 
@@ -32,7 +31,7 @@ export function PaymentRow({ payment }: { payment: Payment }) {
         <span
           className={`mt-1.5 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${TONE_CLASSES[STATUS_TONES[status]]}`}
         >
-          {statusLabel(t, status)} · {dueLabel(payment.due_date, t)}
+          {rowStatusText(t, status, payment.due_date)}
         </span>
       </div>
       <div className="text-right">
