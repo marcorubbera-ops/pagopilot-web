@@ -69,6 +69,25 @@ function AuthPage() {
     }
   };
 
+  const forgotPassword = async () => {
+    if (!email) {
+      toast.error(t("auth.forgotPassword.needEmail"));
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success(t("auth.forgotPassword.sent"));
+    } catch (error) {
+      toast.error(authErrorMessage(error, t));
+    } finally {
+      setBusy(false);
+    }
+  };
+
 const google = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -123,6 +142,15 @@ const google = async () => {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
+            {mode === "signin" ? (
+              <button
+                type="button"
+                className="text-[13px] font-medium text-primary"
+                onClick={() => void forgotPassword()}
+              >
+                {t("auth.forgotPassword")}
+              </button>
+            ) : null}
           </div>
           <Button type="submit" size="lg" className="w-full" disabled={busy}>
             {busy ? t("auth.wait") : mode === "signin" ? t("auth.signin") : t("auth.signup")}

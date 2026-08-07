@@ -68,6 +68,17 @@ const it = {
   "auth.toSignup": "Nuovo su PagoPilot?",
   "auth.toSignin": "Hai già un account?",
   "auth.signout": "Esci",
+  "auth.forgotPassword": "Hai dimenticato la password?",
+  "auth.forgotPassword.needEmail": "Inserisci prima la tua email.",
+  "auth.forgotPassword.sent":
+    "Se l'indirizzo è registrato, riceverai un'email con le istruzioni per reimpostare la password.",
+  "auth.reset.title": "Reimposta la password",
+  "auth.reset.description": "Scegli una nuova password per il tuo account.",
+  "auth.reset.newPassword": "Nuova password",
+  "auth.reset.submit": "Reimposta password",
+  "auth.reset.success": "Password aggiornata. Bentornato!",
+  "auth.reset.invalidLink":
+    "Questo link non è valido o è scaduto. Richiedi un nuovo link dalla pagina di accesso.",
 
   "home.stat.due": "Da pagare",
   "home.stat.soon": "In arrivo",
@@ -373,6 +384,15 @@ const en: Record<TranslationKey, string> = {
   "auth.toSignup": "New to PagoPilot?",
   "auth.toSignin": "Already have an account?",
   "auth.signout": "Sign out",
+  "auth.forgotPassword": "Forgot your password?",
+  "auth.forgotPassword.needEmail": "Enter your email first.",
+  "auth.forgotPassword.sent": "If that address is registered, you'll get an email with reset instructions.",
+  "auth.reset.title": "Reset your password",
+  "auth.reset.description": "Choose a new password for your account.",
+  "auth.reset.newPassword": "New password",
+  "auth.reset.submit": "Reset password",
+  "auth.reset.success": "Password updated. Welcome back!",
+  "auth.reset.invalidLink": "This link is invalid or expired. Request a new one from the sign-in page.",
 
   "home.stat.due": "Payments due",
   "home.stat.soon": "Expiring soon",
