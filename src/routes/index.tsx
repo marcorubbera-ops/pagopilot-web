@@ -80,6 +80,16 @@ function Landing() {
             </li>
           ))}
         </ul>
+
+        <p className="mt-10 text-center text-[13px] text-muted-foreground">
+          <Link to="/privacy" className="underline">
+            {t("legal.privacy")}
+          </Link>{" "}
+          ·{" "}
+          <Link to="/terms" className="underline">
+            {t("legal.terms")}
+          </Link>
+        </p>
       </div>
     </main>
   );

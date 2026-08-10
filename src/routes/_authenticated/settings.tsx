@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -196,6 +196,22 @@ function SettingsPage() {
           <Info className="mt-0.5 size-5 text-muted-foreground" strokeWidth={1.8} aria-hidden />
           <p className="text-[13px] text-muted-foreground">{t("settings.about.copy")}</p>
         </div>
+        <Link
+          to="/privacy"
+          target="_blank"
+          className="flex items-center justify-between px-4 py-3 text-[15px] text-foreground active:bg-muted/60"
+        >
+          {t("legal.privacy")}
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
+        <Link
+          to="/terms"
+          target="_blank"
+          className="flex items-center justify-between px-4 py-3 text-[15px] text-foreground active:bg-muted/60"
+        >
+          {t("legal.terms")}
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
       </Section>
 
       <Button

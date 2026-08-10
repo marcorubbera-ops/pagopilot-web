@@ -283,6 +283,8 @@ const it = {
   "settings.about": "Informazioni",
   "settings.about.copy":
     "PagoPilot ti aiuta a organizzare le scadenze. I pagamenti effettivi vanno eseguiti tramite la tua banca o l'app IO.",
+  "legal.privacy": "Informativa sulla privacy",
+  "legal.terms": "Termini di servizio",
 
   "premium.title": "PagoPilot Premium",
   "premium.copy": "Tutto senza limiti, per non perdere mai una scadenza.",
@@ -595,6 +597,8 @@ const en: Record<TranslationKey, string> = {
   "settings.export": "Export payments (CSV)",
   "settings.about": "About",
   "settings.about.copy": "PagoPilot keeps your payments organised. Actual payments always happen through your bank or the official IO app.",
+  "legal.privacy": "Privacy Policy",
+  "legal.terms": "Terms of Service",
 
   "premium.title": "PagoPilot Premium",
   "premium.copy": "Everything unlimited, so you never miss a due date.",
