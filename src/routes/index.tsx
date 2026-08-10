@@ -7,7 +7,6 @@ import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/AppShell";
 
 export const Route = createFileRoute("/")({
-  ssr: false,
   head: () => ({
     meta: [
       { title: "PagoPilot — Organizza i tuoi pagamenti" },

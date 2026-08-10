@@ -4,7 +4,6 @@ import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/AppShell";
 
 export const Route = createFileRoute("/privacy")({
-  ssr: false,
   head: () => ({
     meta: [
       { title: "Informativa sulla privacy — PagoPilot" },

@@ -3,7 +3,6 @@ import { useI18n } from "@/lib/i18n";
 import { LegalLayout } from "@/routes/privacy";
 
 export const Route = createFileRoute("/terms")({
-  ssr: false,
   head: () => ({
     meta: [
       { title: "Termini di servizio — PagoPilot" },
