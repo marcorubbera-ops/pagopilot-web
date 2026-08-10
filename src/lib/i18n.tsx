@@ -678,18 +678,25 @@ type I18nValue = { lang: Lang; setLang: (lang: Lang) => void; t: Translate; loca
 
 const I18nContext = createContext<I18nValue | null>(null);
 
-function readStoredLang(): Lang {
-  if (typeof window === "undefined") return DEFAULT_LANG;
+function readStoredLang(fallback: Lang): Lang {
+  if (typeof window === "undefined") return fallback;
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === "en" || stored === "it" ? stored : DEFAULT_LANG;
+  return stored === "en" || stored === "it" ? stored : fallback;
 }
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
+export function I18nProvider({
+  children,
+  initialLang = DEFAULT_LANG,
+}: {
+  children: ReactNode;
+  /** Server-detected language (e.g. from Accept-Language) to use before any stored preference exists. */
+  initialLang?: Lang;
+}) {
+  const [lang, setLangState] = useState<Lang>(initialLang);
 
   useEffect(() => {
-    setLangState(readStoredLang());
-  }, []);
+    setLangState(readStoredLang(initialLang));
+  }, [initialLang]);
 
   useEffect(() => {
     document.documentElement.lang = lang;

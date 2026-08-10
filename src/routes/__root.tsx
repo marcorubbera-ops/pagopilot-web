@@ -10,7 +10,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
-import { I18nProvider } from "@/lib/i18n";
+import { I18nProvider, DEFAULT_LANG } from "@/lib/i18n";
+import { detectInitialLang } from "@/lib/i18n.functions";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -76,6 +77,14 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  loader: async () => {
+    if (typeof document !== "undefined") return { initialLang: DEFAULT_LANG };
+    try {
+      return { initialLang: await detectInitialLang() };
+    } catch {
+      return { initialLang: DEFAULT_LANG };
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -130,11 +139,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { initialLang } = Route.useLoaderData();
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <I18nProvider>
+      <I18nProvider initialLang={initialLang}>
         <Outlet />
         <Toaster position="top-center" />
       </I18nProvider>
