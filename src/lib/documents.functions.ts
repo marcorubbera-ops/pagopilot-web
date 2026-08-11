@@ -6,6 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { extractPaymentWithGemini } from "@/lib/ai/gemini";
+import { getImportQuota } from "@/lib/profile.functions";
 
 const extractInput = z.object({
   /** Base64 data URL of an image (JPEG/PNG/WebP) or a PDF. */
@@ -80,7 +81,12 @@ export const extractPaymentFromDocument = createServerFn({
 })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => extractInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const quota = await getImportQuota(context.supabase, context.userId);
+    if (quota.importsLeft !== null && quota.importsLeft <= 0) {
+      throw new Error("Free import limit reached for this month.");
+    }
+
     console.log("========== DOCUMENT EXTRACTION ==========");
     console.log("Filename:", data.filename);
     console.log("Is PDF:", data.dataUrl.startsWith("data:application/pdf"));

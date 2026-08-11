@@ -204,7 +204,8 @@ const it = {
   "import.uploading": "Caricamento…",
   "detail.qr.title": "Codice QR di pagamento",
   "detail.qr.alt": "Codice QR per pagare {title}",
-  "detail.qr.hint": "Inquadralo con l'app della banca, o salvalo per pagare da un altro dispositivo.",
+  "detail.qr.hint":
+    "Inquadralo con l'app della banca, o salvalo per pagare da un altro dispositivo.",
   "detail.qr.save": "Salva immagine QR",
   "pay.title": "Paga ora",
   "pay.hint":
@@ -221,7 +222,8 @@ const it = {
   "import.review": "Controlla i dati",
   "import.hint": "Funziona con bollette, avvisi PagoPA, F24 e ricevute.",
   "import.limit.title": "Limite gratuito raggiunto",
-  "import.limit.copy": "Il piano gratuito include {limit} importazioni al mese. Passa a Premium per importazioni illimitate.",
+  "import.limit.copy":
+    "Il piano gratuito include {limit} importazioni al mese. Passa a Premium per importazioni illimitate.",
   "import.remaining": "{count} importazioni rimaste questo mese",
   "import.remaining.none": "Hai terminato le importazioni per questo mese",
   "import.attached": "Documento allegato",
@@ -235,7 +237,8 @@ const it = {
   "import.menu.camera": "Scatta una foto",
   "import.menu.scan": "Scansiona / Inquadra QR",
   "scan.title": "Inquadra l'avviso",
-  "scan.description": "Punta la fotocamera sul codice QR PagoPA: viene letto da solo. Per una bolletta senza QR usa il pulsante di scatto.",
+  "scan.description":
+    "Punta la fotocamera sul codice QR PagoPA: viene letto da solo. Per una bolletta senza QR usa il pulsante di scatto.",
   "scan.searching": "Cerco un codice QR…",
   "scan.found": "Codice QR trovato",
   "scan.shoot": "Scatta",
@@ -296,7 +299,7 @@ const it = {
   "premium.manage": "Disattiva Premium",
   "premium.activated": "Premium attivato",
   "premium.deactivated": "Premium disattivato",
-  "premium.demo": "Demo: l'attivazione è simulata, nessun pagamento reale.",
+  "premium.demo": "Gli acquisti Premium non sono ancora disponibili su questa build.",
   "premium.headline": "Non perdere mai più un pagamento.",
   "premium.subtitle": "Tieni ogni pagamento in ordine.",
   "premium.benefit.archive": "Archivio illimitato",
@@ -388,13 +391,15 @@ const en: Record<TranslationKey, string> = {
   "auth.signout": "Sign out",
   "auth.forgotPassword": "Forgot your password?",
   "auth.forgotPassword.needEmail": "Enter your email first.",
-  "auth.forgotPassword.sent": "If that address is registered, you'll get an email with reset instructions.",
+  "auth.forgotPassword.sent":
+    "If that address is registered, you'll get an email with reset instructions.",
   "auth.reset.title": "Reset your password",
   "auth.reset.description": "Choose a new password for your account.",
   "auth.reset.newPassword": "New password",
   "auth.reset.submit": "Reset password",
   "auth.reset.success": "Password updated. Welcome back!",
-  "auth.reset.invalidLink": "This link is invalid or expired. Request a new one from the sign-in page.",
+  "auth.reset.invalidLink":
+    "This link is invalid or expired. Request a new one from the sign-in page.",
 
   "home.stat.due": "Payments due",
   "home.stat.soon": "Expiring soon",
@@ -537,13 +542,15 @@ const en: Record<TranslationKey, string> = {
   "import.review": "Review the details",
   "import.hint": "Works with utility bills, PagoPA notices, F24 forms and receipts.",
   "import.limit.title": "Free limit reached",
-  "import.limit.copy": "The free plan includes {limit} imports per month. Go Premium for unlimited imports.",
+  "import.limit.copy":
+    "The free plan includes {limit} imports per month. Go Premium for unlimited imports.",
   "import.remaining": "{count} imports left this month",
   "import.remaining.none": "You've used all your imports for this month",
   "import.attached": "Document attached",
   "import.multi.title.one": "Found {count} payment",
   "import.multi.title.other": "Found {count} payments",
-  "import.multi.description": "This document contains multiple due dates. Choose which ones to import.",
+  "import.multi.description":
+    "This document contains multiple due dates. Choose which ones to import.",
   "import.multi.import.one": "Import {count} payment",
   "import.multi.import.other": "Import {count} payments",
   "import.menu.pdf": "Import PDF",
@@ -551,7 +558,8 @@ const en: Record<TranslationKey, string> = {
   "import.menu.camera": "Take a picture",
   "import.menu.scan": "Scan / Frame QR",
   "scan.title": "Frame the notice",
-  "scan.description": "Point the camera at the PagoPA QR code — it is read automatically. For a bill without a QR code, use the shutter button.",
+  "scan.description":
+    "Point the camera at the PagoPA QR code — it is read automatically. For a bill without a QR code, use the shutter button.",
   "scan.searching": "Looking for a QR code…",
   "scan.found": "QR code found",
   "scan.shoot": "Capture",
@@ -596,7 +604,8 @@ const en: Record<TranslationKey, string> = {
   "settings.data": "Your data",
   "settings.export": "Export payments (CSV)",
   "settings.about": "About",
-  "settings.about.copy": "PagoPilot keeps your payments organised. Actual payments always happen through your bank or the official IO app.",
+  "settings.about.copy":
+    "PagoPilot keeps your payments organised. Actual payments always happen through your bank or the official IO app.",
   "legal.privacy": "Privacy Policy",
   "legal.terms": "Terms of Service",
 
@@ -610,7 +619,7 @@ const en: Record<TranslationKey, string> = {
   "premium.manage": "Turn off Premium",
   "premium.activated": "Premium activated",
   "premium.deactivated": "Premium turned off",
-  "premium.demo": "Demo: activation is simulated, no real payment is taken.",
+  "premium.demo": "Premium purchases aren't available in this build yet.",
   "premium.headline": "Never miss another payment.",
   "premium.subtitle": "Keep every payment organized.",
   "premium.benefit.archive": "Unlimited archive",

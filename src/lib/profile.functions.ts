@@ -2,11 +2,43 @@
  * Profile, premium plan and monthly import quota.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { PREMIUM_ENTITLEMENT } from "@/lib/revenuecat-types";
 
 /** Imports allowed per month on the free plan. */
 export const FREE_IMPORT_LIMIT = 5;
+
+/** Premium status + this month's import usage, shared by every call site that needs to enforce the free-tier limit. */
+export async function getImportQuota(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ premium: boolean; importsUsed: number; importsLeft: number | null }> {
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("premium")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+
+  const start = new Date();
+  start.setUTCDate(1);
+  start.setUTCHours(0, 0, 0, 0);
+  const { count, error: countError } = await supabase
+    .from("payments")
+    .select("id", { count: "exact", head: true })
+    .or("image_url.not.is.null,pdf_url.not.is.null")
+    .gte("created_at", start.toISOString());
+  if (countError) throw new Error(countError.message);
+
+  const premium = profile?.premium ?? false;
+  const used = count ?? 0;
+  return {
+    premium,
+    importsUsed: used,
+    importsLeft: premium ? null : Math.max(0, FREE_IMPORT_LIMIT - used),
+  };
+}
 
 export const getProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -18,38 +50,62 @@ export const getProfile = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
 
-    const start = new Date();
-    start.setUTCDate(1);
-    start.setUTCHours(0, 0, 0, 0);
-    const { count, error: countError } = await context.supabase
-      .from("payments")
-      .select("id", { count: "exact", head: true })
-      .or("image_url.not.is.null,pdf_url.not.is.null")
-      .gte("created_at", start.toISOString());
-    if (countError) throw new Error(countError.message);
-
-    const premium = data?.premium ?? false;
-    const used = count ?? 0;
+    const quota = await getImportQuota(context.supabase, context.userId);
     return {
       profile: data,
-      premium,
-      importsUsed: used,
-      importLimit: premium ? null : FREE_IMPORT_LIMIT,
-      importsLeft: premium ? null : Math.max(0, FREE_IMPORT_LIMIT - used),
+      premium: quota.premium,
+      importsUsed: quota.importsUsed,
+      importLimit: quota.premium ? null : FREE_IMPORT_LIMIT,
+      importsLeft: quota.importsLeft,
     };
   });
 
+/** Looks up the user's active "premium" entitlement directly from RevenueCat's server API. */
+async function hasActiveRevenueCatEntitlement(userId: string): Promise<boolean> {
+  const secretKey = process.env["REVENUECAT_SECRET_API_KEY"];
+  if (!secretKey) throw new Error("RevenueCat is not configured on the server.");
+
+  const response = await fetch(
+    `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`,
+    { headers: { Authorization: `Bearer ${secretKey}` } },
+  );
+  if (!response.ok) throw new Error(`RevenueCat lookup failed (${response.status}).`);
+
+  const body = (await response.json()) as {
+    subscriber?: { entitlements?: Record<string, { expires_date: string | null }> };
+  };
+  const entitlement = body.subscriber?.entitlements?.[PREMIUM_ENTITLEMENT];
+  if (!entitlement) return false;
+  return !entitlement.expires_date || new Date(entitlement.expires_date).getTime() > Date.now();
+}
+
 /**
- * Demo premium switch. A real deployment would flip this from a verified
- * store/payment webhook instead of a client call.
+ * Grants Premium after verifying the entitlement directly with RevenueCat's
+ * server API — never trusts a client-supplied flag, since that's the only
+ * thing standing between a purchase and free access. Used right after a
+ * purchase completes and by "restore purchases".
  */
-export const setPremium = createServerFn({ method: "POST" })
+export const syncPremiumFromRevenueCat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ premium: z.boolean() }).parse(input))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ context }) => {
+    const premium = await hasActiveRevenueCatEntitlement(context.userId);
     const { data: updated, error } = await context.supabase
       .from("profiles")
-      .update({ premium: data.premium })
+      .update({ premium })
+      .eq("id", context.userId)
+      .select("id, premium")
+      .single();
+    if (error) throw new Error(error.message);
+    return updated;
+  });
+
+/** Turns Premium off for the current user. Safe to trust client-side: it can only reduce access, never grant it. */
+export const deactivatePremium = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: updated, error } = await context.supabase
+      .from("profiles")
+      .update({ premium: false })
       .eq("id", context.userId)
       .select("id, premium")
       .single();

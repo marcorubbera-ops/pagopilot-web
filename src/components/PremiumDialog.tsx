@@ -12,28 +12,21 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
-import { setPremium } from "@/lib/profile.functions";
-import {
-  fetchCustomerInfo,
-  fetchPlans,
-  purchasePlan,
-  revenueCatConfigured,
-  type PlanId,
-} from "@/lib/revenuecat";
+import { syncPremiumFromRevenueCat, deactivatePremium } from "@/lib/profile.functions";
+import { fetchPlans, purchasePlan, revenueCatConfigured, type PlanId } from "@/lib/revenuecat";
 
 type Plan = PlanId;
 
-/** Paywall sheet, Apple-style. Activation is simulated — no store billing on the web build. */
+/**
+ * Paywall sheet, Apple-style. Every grant of Premium is re-verified against
+ * RevenueCat's server API before it's written to the database — the client
+ * never gets to just assert "I'm premium now".
+ */
 export function PremiumDialog({
   open,
   onOpenChange,
@@ -48,7 +41,8 @@ export function PremiumDialog({
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const upgrade = useServerFn(setPremium);
+  const upgrade = useServerFn(syncPremiumFromRevenueCat);
+  const downgrade = useServerFn(deactivatePremium);
   const [plan, setPlan] = useState<Plan>("yearly");
   const billingLive = revenueCatConfigured();
 
@@ -60,9 +54,9 @@ export function PremiumDialog({
   });
 
   const mutation = useMutation({
-    mutationFn: (next: boolean) => upgrade({ data: { premium: next } }),
-    onSuccess: (_result, next) => {
-      toast.success(next ? t("premium.activated") : t("premium.deactivated"));
+    mutationFn: () => downgrade({}),
+    onSuccess: () => {
+      toast.success(t("premium.deactivated"));
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
       onOpenChange(false);
     },
@@ -75,31 +69,34 @@ export function PremiumDialog({
       if (!target) throw new Error(t("premium.rc.unavailable"));
       const result = await purchasePlan(user!.id, id, user?.email ?? undefined);
       if (!result.premium) throw new Error(t("premium.rc.unavailable"));
-      return upgrade({ data: { premium: true } });
+      // The client SDK result is only a hint — the server independently
+      // re-verifies with RevenueCat before writing profiles.premium.
+      return upgrade({});
     },
-    onSuccess: () => {
-      toast.success(t("premium.activated"));
+    onSuccess: (result) => {
+      if (result.premium) {
+        toast.success(t("premium.activated"));
+        onOpenChange(false);
+      } else {
+        toast.error(t("premium.rc.unavailable"));
+      }
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
-      onOpenChange(false);
     },
     onError: (error: Error) => toast.error(error.message),
   });
 
   const restore = useMutation({
     mutationFn: async () => {
-      if (!billingLive || !user?.id) return false;
-      const info = await fetchCustomerInfo(user.id);
-      const active = info.premium;
-      await upgrade({ data: { premium: active } });
-      return active;
+      if (!billingLive || !user?.id) return { premium: false };
+      return upgrade({});
     },
-    onSuccess: (active) => {
+    onSuccess: (result) => {
       if (!billingLive) {
         toast.info(t("premium.restored"));
         return;
       }
-      toast[active ? "success" : "info"](
-        active ? t("premium.activated") : t("premium.restored"),
+      toast[result.premium ? "success" : "info"](
+        result.premium ? t("premium.activated") : t("premium.restored"),
       );
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
@@ -151,9 +148,7 @@ export function PremiumDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-h-[92vh] gap-0 overflow-y-auto rounded-3xl p-6 sm:max-w-md"
-      >
+      <DialogContent className="max-h-[92vh] gap-0 overflow-y-auto rounded-3xl p-6 sm:max-w-md">
         <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-[18px] bg-primary/12">
           <BadgeEuro className="size-7 text-primary" strokeWidth={1.8} aria-hidden />
         </div>
@@ -206,7 +201,11 @@ export function PremiumDialog({
                     )}
                   >
                     {active ? (
-                      <Check className="size-3 text-primary-foreground" strokeWidth={3} aria-hidden />
+                      <Check
+                        className="size-3 text-primary-foreground"
+                        strokeWidth={3}
+                        aria-hidden
+                      />
                     ) : null}
                   </span>
                 </span>
@@ -228,11 +227,11 @@ export function PremiumDialog({
             variant={premium ? "secondary" : "default"}
             disabled={busy}
             onClick={() => {
-              if (billingLive && !premium) {
-                purchase.mutate(plan);
+              if (premium) {
+                mutation.mutate();
                 return;
               }
-              mutation.mutate(!premium);
+              purchase.mutate(plan);
             }}
           >
             {premium ? t("premium.manage") : t("premium.continue")}

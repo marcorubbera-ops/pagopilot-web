@@ -6,12 +6,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { stripUndefined } from "@/lib/payments";
+import { getImportQuota } from "@/lib/profile.functions";
 
 const paymentInput = z.object({
   title: z.string().trim().min(1, "Title is required").max(120),
   entity: z.string().trim().max(120).optional().nullable(),
   amount: z.number().min(0).max(9_999_999),
-  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  due_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
   category: z.string().trim().min(1).default("other"),
   notice_number: z.string().trim().max(60).optional().nullable(),
   tax_code: z.string().trim().max(40).optional().nullable(),
@@ -80,9 +85,7 @@ export const createPayment = createServerFn({ method: "POST" })
 export const updatePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z
-      .object({ id: z.string().uuid(), patch: paymentInput.partial() })
-      .parse(input),
+    z.object({ id: z.string().uuid(), patch: paymentInput.partial() }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { data: updated, error } = await context.supabase
@@ -108,14 +111,25 @@ export const setPaymentStatus = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        status: z.enum(["pending", "due_today", "upcoming", "paid", "expired", "archived", "cancelled"]),
+        status: z.enum([
+          "pending",
+          "due_today",
+          "upcoming",
+          "paid",
+          "expired",
+          "archived",
+          "cancelled",
+        ]),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { data: updated, error } = await context.supabase
       .from("payments")
-      .update({ status: data.status, paid_at: data.status === "paid" ? new Date().toISOString() : null })
+      .update({
+        status: data.status,
+        paid_at: data.status === "paid" ? new Date().toISOString() : null,
+      })
       .eq("id", data.id)
       .select("*")
       .single();
@@ -152,6 +166,13 @@ export const attachDocument = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    if (data.kind === "image" || data.kind === "pdf") {
+      const quota = await getImportQuota(context.supabase, context.userId);
+      if (quota.importsLeft !== null && quota.importsLeft <= 0) {
+        throw new Error("Free import limit reached for this month.");
+      }
+    }
+
     const patch =
       data.kind === "image"
         ? { image_url: data.path }
