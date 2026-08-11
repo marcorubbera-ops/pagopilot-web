@@ -7,21 +7,6 @@ import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/AppShell";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "PagoPilot — Organizza i tuoi pagamenti" },
-      {
-        name: "description",
-        content:
-          "PagoPilot raccoglie bollette, avvisi e tasse in un unico posto, con promemoria per non perdere nessuna scadenza.",
-      },
-      { property: "og:title", content: "PagoPilot — Organizza i tuoi pagamenti" },
-      {
-        property: "og:description",
-        content: "Importa i documenti, estrai i dati, ricevi un promemoria prima di ogni scadenza.",
-      },
-    ],
-  }),
   component: Landing,
 });
 
@@ -53,9 +38,7 @@ function Landing() {
             <ShieldCheck className="size-8 text-primary" strokeWidth={1.8} aria-hidden />
           </div>
           <h1 className="large-title">PagoPilot</h1>
-          <p className="mt-3 text-[17px] text-muted-foreground">
-            {t("landing.hero")}
-          </p>
+          <p className="mt-3 text-[17px] text-muted-foreground">{t("landing.hero")}</p>
           <div className="mt-7 flex flex-col gap-3">
             <Button asChild size="lg">
               <Link to="/auth">{t("landing.cta.primary")}</Link>

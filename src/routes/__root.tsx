@@ -89,18 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "PagoPilot — Organizza i tuoi pagamenti" },
-      {
-        name: "description",
-        content:
-          "Bollette, avvisi e tasse in un unico posto, con promemoria prima di ogni scadenza.",
-      },
       { name: "author", content: "PagoPilot" },
-      { property: "og:title", content: "PagoPilot — Organizza i tuoi pagamenti" },
-      {
-        property: "og:description",
-        content: "Non perdere più nessuna scadenza di pagamento.",
-      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       {
@@ -123,10 +112,33 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+const HOMEPAGE_COPY = {
+  it: {
+    title: "PagoPilot — Organizza i tuoi pagamenti",
+    description:
+      "Bollette, avvisi e tasse in un unico posto, con promemoria prima di ogni scadenza.",
+    ogDescription: "Non perdere più nessuna scadenza di pagamento.",
+  },
+  en: {
+    title: "PagoPilot — Organize your payments",
+    description: "Bills, notices and taxes in one place, with reminders before every due date.",
+    ogDescription: "Never miss another payment due date again.",
+  },
+};
+
+// Rendered directly (rather than via head()) because head() runs before the
+// loader's language detection resolves, so it can't see initialLang — see
+// commit history. useLoaderData() here does see it correctly.
 function RootShell({ children }: { children: ReactNode }) {
+  const { initialLang } = Route.useLoaderData();
+  const copy = HOMEPAGE_COPY[initialLang];
   return (
-    <html lang="it">
+    <html lang={initialLang}>
       <head>
+        <title>{copy.title}</title>
+        <meta name="description" content={copy.description} />
+        <meta property="og:title" content={copy.title} />
+        <meta property="og:description" content={copy.ogDescription} />
         <HeadContent />
       </head>
       <body>
