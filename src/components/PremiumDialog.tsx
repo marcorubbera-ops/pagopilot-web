@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, BadgeEuro, BarChart3, Check, ScanLine } from "lucide-react";
+import { Archive, BadgeEuro, BarChart3, Check, FileDown, Headset, ScanLine } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -101,6 +101,8 @@ export function PremiumDialog({
     { icon: ScanLine, label: t("premium.benefit.imports") },
     { icon: Archive, label: t("premium.benefit.storage") },
     { icon: BarChart3, label: t("premium.benefit.stats") },
+    { icon: FileDown, label: t("premium.benefit.csv") },
+    { icon: Headset, label: t("premium.benefit.support") },
   ];
 
   const fallbackPlans: { id: Plan; name: string; price: string; badge?: string }[] = [
