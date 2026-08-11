@@ -4,4 +4,6 @@
     <string name="title_activity_main">PagoPilot</string>
     <string name="package_name">com.pagopilot.app</string>
     <string name="custom_url_scheme">com.pagopilot.app</string>
+    <string name="widget_header">PagoPilot</string>
+    <string name="widget_empty_title">Nessun pagamento in arrivo</string>
 </resources>

@@ -4,6 +4,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppLock } from "@/components/AppLock";
 import { supabase } from "@/integrations/supabase/client";
 import { useReminderNotifications } from "@/hooks/useReminderNotifications";
+import { useWidgetSync } from "@/hooks/useWidgetSync";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   useReminderNotifications();
+  useWidgetSync();
   return (
     <AppLock>
       <Outlet />

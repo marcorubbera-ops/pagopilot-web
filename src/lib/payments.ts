@@ -166,6 +166,20 @@ export function isOpen(payment: Payment): boolean {
   return status !== "paid" && status !== "archived" && status !== "cancelled";
 }
 
+/** Soonest unpaid, not-yet-past-due payment — null when nothing is upcoming. */
+export function findNextDue(payments: Payment[]): Payment | null {
+  let nextDue: Payment | null = null;
+  for (const payment of payments) {
+    if (!payment.due_date) continue;
+    const status = effectiveStatus(payment);
+    const days = daysUntil(payment.due_date);
+    if (status !== "paid" && days !== null && days >= 0) {
+      if (!nextDue || (nextDue.due_date ?? "") > payment.due_date) nextDue = payment;
+    }
+  }
+  return nextDue;
+}
+
 /**
  * Removes keys whose value is `undefined` so Supabase inserts/updates satisfy
  * `exactOptionalPropertyTypes` (absent key vs explicit undefined).

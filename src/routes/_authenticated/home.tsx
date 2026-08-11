@@ -13,8 +13,8 @@ import { createPayment, listPayments } from "@/lib/payments.functions";
 import { listUpcomingReminders } from "@/lib/reminders.functions";
 import { LOCALES, useI18n, type Lang } from "@/lib/i18n";
 import {
-  daysUntil,
   effectiveStatus,
+  findNextDue,
   formatAmount,
   formatDate,
   type Payment,
@@ -232,7 +232,6 @@ function summarize(payments: Payment[]) {
   let overdue = 0;
   let paid = 0;
   let monthTotal = 0;
-  let nextDue: Payment | null = null;
 
   for (const payment of payments) {
     const status = effectiveStatus(payment);
@@ -246,14 +245,10 @@ function summarize(payments: Payment[]) {
       if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) {
         monthTotal += Number(payment.amount);
       }
-      const days = daysUntil(payment.due_date);
-      if (status !== "paid" && days !== null && days >= 0) {
-        if (!nextDue || (nextDue.due_date ?? "") > payment.due_date) nextDue = payment;
-      }
     }
   }
 
-  return { due, soon, overdue, paid, monthTotal, nextDue };
+  return { due, soon, overdue, paid, monthTotal, nextDue: findNextDue(payments) };
 }
 
 type UpcomingReminders = Awaited<ReturnType<typeof listUpcomingReminders>>;
