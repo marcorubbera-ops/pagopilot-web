@@ -129,11 +129,23 @@
   }
 }
 
-/* Frosted glass surface used by the nav bar and tab bar. */
+/*
+ * Frosted glass surface used by the nav bar and tab bar. Solid by default —
+ * some WebViews (notably Android's system WebView on certain OS versions)
+ * silently ignore backdrop-filter, which would otherwise leave scrolled
+ * content showing right through a translucent bar. The blur/translucency
+ * only applies once @supports confirms the engine actually implements it.
+ */
 @utility glass {
-  background-color: color-mix(in oklab, var(--color-background) 72%, transparent);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background-color: var(--color-background);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass {
+    background-color: color-mix(in oklab, var(--color-background) 72%, transparent);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
 }
 
 /* Grouped-list card, like iOS inset table sections. */
