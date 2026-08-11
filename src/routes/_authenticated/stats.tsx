@@ -3,20 +3,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Crown, Download } from "lucide-react";
-import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
+import { ExportMenu } from "@/components/ExportMenu";
 import { PremiumDialog } from "@/components/PremiumDialog";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { listPayments } from "@/lib/payments.functions";
 import { getProfile } from "@/lib/profile.functions";
-import {
-  CATEGORY_IDS,
-  categoryLabel,
-  effectiveStatus,
-  formatAmount,
-  type Payment,
-} from "@/lib/payments";
+import { CATEGORY_IDS, categoryLabel, effectiveStatus, formatAmount } from "@/lib/payments";
 
 export const Route = createFileRoute("/_authenticated/stats")({
   head: () => ({
@@ -118,37 +112,6 @@ function StatsPage() {
   const maxCategory = Math.max(...byCategory.map(([, total]) => total), 1);
   const maxMonth = Math.max(...byMonth.map((month) => month.total), 1);
 
-  function exportCsv() {
-    if (!premium) {
-      setPaywall(true);
-      return;
-    }
-    const header = "title,entity,amount,due_date,status,category,notice_number\n";
-    const body = rows
-      .map((payment: Payment) =>
-        [
-          payment.title,
-          payment.entity ?? "",
-          payment.amount,
-          payment.due_date ?? "",
-          effectiveStatus(payment),
-          payment.category,
-          payment.notice_number ?? "",
-        ]
-          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
-          .join(","),
-      )
-      .join("\n");
-    const blob = new Blob([header + body], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "pagopilot.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success(t("stats.exported"));
-  }
-
   return (
     <AppShell title={t("stats.title")} subtitle={t("stats.subtitle")}>
       <div className="mb-5 flex gap-2">
@@ -242,9 +205,16 @@ function StatsPage() {
             </button>
           )}
 
-          <Button variant="secondary" className="w-full" onClick={exportCsv}>
-            <Download className="size-4" aria-hidden /> {t("stats.export")}
-          </Button>
+          <ExportMenu
+            payments={rows}
+            premium={premium}
+            onPaywall={() => setPaywall(true)}
+            trigger={
+              <Button variant="secondary" className="w-full">
+                <Download className="size-4" aria-hidden /> {t("stats.export")}
+              </Button>
+            }
+          />
         </>
       )}
 

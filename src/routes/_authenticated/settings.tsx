@@ -14,13 +14,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
+import { ExportMenu } from "@/components/ExportMenu";
 import { PremiumDialog } from "@/components/PremiumDialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { LANGUAGES, useI18n } from "@/lib/i18n";
 import { listPayments } from "@/lib/payments.functions";
 import { getProfile } from "@/lib/profile.functions";
-import { effectiveStatus } from "@/lib/payments";
 import { biometricsSupported, disableLock, enableLock, lockEnabled } from "@/lib/applock";
 import { Switch } from "@/components/ui/switch";
 
@@ -76,36 +76,6 @@ function SettingsPage() {
   const { data: account } = useQuery({ queryKey: ["profile"], queryFn: () => fetchProfile() });
   const { data: payments } = useQuery({ queryKey: ["payments"], queryFn: () => fetchPayments() });
   const premium = account?.premium ?? false;
-
-  function exportCsv() {
-    if (!premium) {
-      setPaywall(true);
-      return;
-    }
-    const rows = payments ?? [];
-    const header = "title,entity,amount,due_date,status,category\n";
-    const body = rows
-      .map((payment) =>
-        [
-          payment.title,
-          payment.entity ?? "",
-          payment.amount,
-          payment.due_date ?? "",
-          effectiveStatus(payment),
-          payment.category,
-        ]
-          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
-          .join(","),
-      )
-      .join("\n");
-    const url = URL.createObjectURL(new Blob([header + body], { type: "text/csv;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "pagopilot.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success(t("stats.exported"));
-  }
 
   return (
     <AppShell title={t("settings.title")}>
@@ -189,14 +159,20 @@ function SettingsPage() {
       </Section>
 
       <Section title={t("settings.data")}>
-        <button
-          type="button"
-          onClick={exportCsv}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px]"
-        >
-          <Download className="size-5 text-muted-foreground" strokeWidth={1.8} aria-hidden />
-          {t("settings.export")}
-        </button>
+        <ExportMenu
+          payments={payments ?? []}
+          premium={premium}
+          onPaywall={() => setPaywall(true)}
+          trigger={
+            <button
+              type="button"
+              className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px]"
+            >
+              <Download className="size-5 text-muted-foreground" strokeWidth={1.8} aria-hidden />
+              {t("settings.export")}
+            </button>
+          }
+        />
       </Section>
 
       <Section title={t("settings.about")}>
