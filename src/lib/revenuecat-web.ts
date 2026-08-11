@@ -16,7 +16,7 @@ import {
 } from "@/lib/revenuecat-types";
 
 /** Web Billing public API key. Publishable — safe in client code. */
-export const REVENUECAT_WEB_API_KEY = "";
+export const REVENUECAT_WEB_API_KEY = "rcb_sb_ZjpcLZXKdHLrEFTNZCtTgMZyq";
 
 /** True when a Web Billing key has been configured. */
 export function revenueCatConfigured(): boolean {
