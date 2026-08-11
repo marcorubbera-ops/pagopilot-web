@@ -78,6 +78,10 @@ function SettingsPage() {
   const premium = account?.premium ?? false;
 
   function exportCsv() {
+    if (!premium) {
+      setPaywall(true);
+      return;
+    }
     const rows = payments ?? [];
     const header = "title,entity,amount,due_date,status,category\n";
     const body = rows
@@ -156,7 +160,11 @@ function SettingsPage() {
       <Section title={t("settings.security")}>
         <div className="flex items-start justify-between gap-3 px-4 py-3">
           <span className="flex min-w-0 items-start gap-3">
-            <ScanFace className="mt-0.5 size-5 shrink-0 text-muted-foreground" strokeWidth={1.8} aria-hidden />
+            <ScanFace
+              className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+              strokeWidth={1.8}
+              aria-hidden
+            />
             <span className="min-w-0">
               <span className="block text-[15px]">{t("settings.lock")}</span>
               <span className="block text-[13px] text-muted-foreground">

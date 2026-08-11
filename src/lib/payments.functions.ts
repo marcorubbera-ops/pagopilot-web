@@ -6,7 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { stripUndefined } from "@/lib/payments";
-import { getImportQuota } from "@/lib/profile.functions";
+import { getImportQuota, getStorageQuota } from "@/lib/profile.functions";
 
 const paymentInput = z.object({
   title: z.string().trim().min(1, "Title is required").max(120),
@@ -170,6 +170,24 @@ export const attachDocument = createServerFn({ method: "POST" })
       const quota = await getImportQuota(context.supabase, context.userId);
       if (quota.importsLeft !== null && quota.importsLeft <= 0) {
         throw new Error("Free import limit reached for this month.");
+      }
+    }
+
+    // Only a payment with no attachment yet adds to the archive count —
+    // replacing an existing attachment shouldn't be blocked by the limit.
+    const { data: existing, error: existingError } = await context.supabase
+      .from("payments")
+      .select("image_url, pdf_url, receipt_url")
+      .eq("id", data.id)
+      .single();
+    if (existingError) throw new Error(existingError.message);
+    const alreadyInArchive = Boolean(
+      existing.image_url ?? existing.pdf_url ?? existing.receipt_url,
+    );
+    if (!alreadyInArchive) {
+      const storage = await getStorageQuota(context.supabase, context.userId);
+      if (storage.storageLeft !== null && storage.storageLeft <= 0) {
+        throw new Error("Free storage limit reached. Upgrade to Premium for unlimited storage.");
       }
     }
 

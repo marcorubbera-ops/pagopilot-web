@@ -1,14 +1,5 @@
 import { useState } from "react";
-import {
-  Archive,
-  BadgeEuro,
-  Check,
-  CloudUpload,
-  FileDown,
-  ScanFace,
-  Receipt,
-  ShieldOff,
-} from "lucide-react";
+import { Archive, BadgeEuro, BarChart3, Check, ScanLine } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -104,12 +95,9 @@ export function PremiumDialog({
   });
 
   const benefits = [
-    { icon: Archive, label: t("premium.benefit.archive") },
-    { icon: CloudUpload, label: t("premium.benefit.sync") },
-    { icon: Receipt, label: t("premium.benefit.receipts") },
-    { icon: ScanFace, label: t("premium.benefit.faceid") },
-    { icon: FileDown, label: t("premium.benefit.pdf") },
-    { icon: ShieldOff, label: t("premium.benefit.noads") },
+    { icon: ScanLine, label: t("premium.benefit.imports") },
+    { icon: Archive, label: t("premium.benefit.storage") },
+    { icon: BarChart3, label: t("premium.benefit.stats") },
   ];
 
   const fallbackPlans: { id: Plan; name: string; price: string; badge?: string }[] = [
@@ -159,7 +147,7 @@ export function PremiumDialog({
           {reason ?? t("premium.subtitle")}
         </DialogDescription>
 
-        <ul className="mt-5 grid grid-cols-2 gap-x-3 gap-y-2.5">
+        <ul className="mt-5 space-y-2.5">
           {benefits.map(({ icon: Icon, label }) => (
             <li key={label} className="flex items-center gap-2 text-[14px]">
               <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-success/12">

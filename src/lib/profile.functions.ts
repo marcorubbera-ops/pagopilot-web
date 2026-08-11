@@ -9,6 +9,9 @@ import { PREMIUM_ENTITLEMENT } from "@/lib/revenuecat-types";
 /** Imports allowed per month on the free plan. */
 export const FREE_IMPORT_LIMIT = 5;
 
+/** Total documents (image, PDF or receipt) a free-plan account can keep attached at once. */
+export const FREE_STORAGE_LIMIT = 20;
+
 /** Premium status + this month's import usage, shared by every call site that needs to enforce the free-tier limit. */
 export async function getImportQuota(
   supabase: SupabaseClient,
@@ -40,6 +43,37 @@ export async function getImportQuota(
   };
 }
 
+/**
+ * Premium status + total (not monthly) attached-document count, for the
+ * "unlimited archive" benefit — separate from the monthly import quota,
+ * which limits new OCR extractions, not how many documents you keep.
+ */
+export async function getStorageQuota(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ premium: boolean; storageUsed: number; storageLeft: number | null }> {
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("premium")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+
+  const { count, error: countError } = await supabase
+    .from("payments")
+    .select("id", { count: "exact", head: true })
+    .or("image_url.not.is.null,pdf_url.not.is.null,receipt_url.not.is.null");
+  if (countError) throw new Error(countError.message);
+
+  const premium = profile?.premium ?? false;
+  const used = count ?? 0;
+  return {
+    premium,
+    storageUsed: used,
+    storageLeft: premium ? null : Math.max(0, FREE_STORAGE_LIMIT - used),
+  };
+}
+
 export const getProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -51,12 +85,16 @@ export const getProfile = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     const quota = await getImportQuota(context.supabase, context.userId);
+    const storage = await getStorageQuota(context.supabase, context.userId);
     return {
       profile: data,
       premium: quota.premium,
       importsUsed: quota.importsUsed,
       importLimit: quota.premium ? null : FREE_IMPORT_LIMIT,
       importsLeft: quota.importsLeft,
+      storageUsed: storage.storageUsed,
+      storageLimit: storage.premium ? null : FREE_STORAGE_LIMIT,
+      storageLeft: storage.storageLeft,
     };
   });
 
