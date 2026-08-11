@@ -7,7 +7,13 @@
  *
  * Entitlement + offering identifiers must match the RevenueCat dashboard.
  */
-import type { CustomerInfo, Offering, Package, Purchases } from "@revenuecat/purchases-js";
+import {
+  ErrorCode,
+  type CustomerInfo,
+  type Offering,
+  type Package,
+  type Purchases,
+} from "@revenuecat/purchases-js";
 import {
   PREMIUM_ENTITLEMENT,
   type PlanId,
@@ -80,8 +86,21 @@ export async function purchasePlan(
     pkg = packageCache.get(planId);
   }
   if (!pkg) throw new Error(`Plan not available: ${planId}`);
-  const result = await purchases.purchase({ rcPackage: pkg, customerEmail });
-  return { premium: hasPremium(result.customerInfo) };
+  try {
+    const result = await purchases.purchase({ rcPackage: pkg, customerEmail });
+    return { premium: hasPremium(result.customerInfo) };
+  } catch (error) {
+    // Closing the checkout without paying isn't an error — the caller
+    // shouldn't show an error toast for it.
+    if (
+      error instanceof Error &&
+      "errorCode" in error &&
+      error.errorCode === ErrorCode.UserCancelledError
+    ) {
+      return { premium: false, cancelled: true };
+    }
+    throw error;
+  }
 }
 
 /** Refreshes entitlements from RevenueCat (used by "restore purchases"). */

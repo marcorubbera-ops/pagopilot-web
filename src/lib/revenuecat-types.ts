@@ -10,6 +10,8 @@ export interface RemotePlan {
 /** Result of a purchase or a customer-info refresh: whether Premium is active now. */
 export interface PurchaseOutcome {
   premium: boolean;
+  /** Set (by purchasePlan only) when the user closed the checkout without completing it — not an error. */
+  cancelled?: boolean;
 }
 
 /**

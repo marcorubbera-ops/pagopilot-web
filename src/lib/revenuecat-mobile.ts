@@ -101,8 +101,17 @@ export async function purchasePlan(
     pkg = packageCache.get(planId);
   }
   if (!pkg) throw new Error(`Plan not available: ${planId}`);
-  const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
-  return { premium: hasPremium(customerInfo) };
+  try {
+    const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
+    return { premium: hasPremium(customerInfo) };
+  } catch (error) {
+    // Closing the checkout without paying isn't an error — the caller
+    // shouldn't show an error toast for it.
+    if (error && typeof error === "object" && "userCancelled" in error && error.userCancelled) {
+      return { premium: false, cancelled: true };
+    }
+    throw error;
+  }
 }
 
 /** Refreshes entitlements from RevenueCat (used by "restore purchases"). */

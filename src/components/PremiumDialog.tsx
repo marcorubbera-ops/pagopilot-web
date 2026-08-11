@@ -51,7 +51,7 @@ export function PremiumDialog({
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
       onOpenChange(false);
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => toast.error(error.message || t("premium.rc.unavailable")),
   });
 
   const purchase = useMutation({
@@ -59,12 +59,15 @@ export function PremiumDialog({
       const target = remotePlans?.find((option) => option.id === id);
       if (!target) throw new Error(t("premium.rc.unavailable"));
       const result = await purchasePlan(user!.id, id, user?.email ?? undefined);
+      if (result.cancelled) return result;
       if (!result.premium) throw new Error(t("premium.rc.unavailable"));
       // The client SDK result is only a hint — the server independently
       // re-verifies with RevenueCat before writing profiles.premium.
       return upgrade({});
     },
     onSuccess: (result) => {
+      // The user closed the checkout without paying — not an error, say nothing.
+      if ("cancelled" in result && result.cancelled) return;
       if (result.premium) {
         toast.success(t("premium.activated"));
         onOpenChange(false);
@@ -73,7 +76,7 @@ export function PremiumDialog({
       }
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => toast.error(error.message || t("premium.rc.unavailable")),
   });
 
   const restore = useMutation({
@@ -91,7 +94,7 @@ export function PremiumDialog({
       );
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => toast.error(error.message || t("premium.rc.unavailable")),
   });
 
   const benefits = [
