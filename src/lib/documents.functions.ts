@@ -28,7 +28,9 @@ const extractedItem = z.object({
   description: z.string().nullable().optional(),
 });
 
-const extracted = z.array(extractedItem).min(1);
+// Empty is a legitimate outcome — a photo with no payment on it — not a
+// validation failure. The caller decides how to handle "found nothing".
+const extracted = z.array(extractedItem);
 
 export type ExtractedPayment = z.infer<typeof extractedItem>;
 

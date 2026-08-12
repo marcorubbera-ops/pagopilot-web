@@ -163,26 +163,18 @@ export function ImportDocumentButton({ className }: { className?: string }) {
         iban: (extracted.iban ?? "").replace(/\s+/g, ""),
         notes: extracted.description ?? "",
       };
-      toast.success(qr ? t("import.successQr") : t("import.success"));
+      if (qr || extractedList.length > 0) {
+        toast.success(qr ? t("import.successQr") : t("import.success"));
+      } else {
+        // A well-formed but empty result — Gemini looked and found no
+        // payment on the page. Not an error; let the user fill it in by hand.
+        toast.error(t("import.fail"));
+      }
 
       setPrefill(values);
       setFormOpen(true);
-    } catch (error: any) {
-      console.error("========== IMPORT ERROR ==========");
-      console.error(error);
-
-      alert(
-        JSON.stringify(
-          {
-            message: error?.message,
-            cause: error?.cause,
-            stack: error?.stack,
-            error,
-          },
-          null,
-          2,
-        ),
-      );
+    } catch (error) {
+      console.error("Import failed:", error);
 
       setPrefill({
         title: file.name.replace(/\.[^.]+$/, ""),
@@ -190,7 +182,7 @@ export function ImportDocumentButton({ className }: { className?: string }) {
 
       setFormOpen(true);
 
-      toast.error(error?.message ?? "Import failed");
+      toast.error(t("import.fail"));
     } finally {
       setBusy(null);
     }
