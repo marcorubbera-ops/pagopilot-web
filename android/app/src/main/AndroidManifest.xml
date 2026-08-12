@@ -46,4 +46,17 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Camera is used for QR/notice scanning, but importing a photo/file still works without it. -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!--
+      Without this, PackageManager.resolveActivity() for the camera-capture
+      intent returns null on Android 11+ (package visibility), even when a
+      camera app is installed — Capacitor's file-chooser code then silently
+      falls back to the generic document/gallery picker instead of launching
+      the camera for the "Scatta una foto" input.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
 </manifest>
