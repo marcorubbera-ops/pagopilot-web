@@ -173,6 +173,18 @@ export const attachDocument = createServerFn({ method: "POST" })
       }
     }
 
+    // Trust nothing the client claims to have uploaded — confirm the object
+    // actually landed in storage before linking a payment to it.
+    const lastSlash = data.path.lastIndexOf("/");
+    const folder = lastSlash === -1 ? "" : data.path.slice(0, lastSlash);
+    const filename = data.path.slice(lastSlash + 1);
+    const { data: listing, error: listError } = await context.supabase.storage
+      .from("documents")
+      .list(folder, { search: filename });
+    if (listError || !listing?.some((file) => file.name === filename)) {
+      throw new Error("Upload not found. Please try attaching the document again.");
+    }
+
     // Only a payment with no attachment yet adds to the archive count —
     // replacing an existing attachment shouldn't be blocked by the limit.
     const { data: existing, error: existingError } = await context.supabase
@@ -180,7 +192,7 @@ export const attachDocument = createServerFn({ method: "POST" })
       .select("image_url, pdf_url, receipt_url")
       .eq("id", data.id)
       .single();
-    if (existingError) throw new Error(existingError.message);
+    if (existingError) throw new Error("Payment not found.");
     const alreadyInArchive = Boolean(
       existing.image_url ?? existing.pdf_url ?? existing.receipt_url,
     );

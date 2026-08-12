@@ -150,7 +150,13 @@ export function QuickAddDialog({
               <Input
                 inputMode="decimal"
                 placeholder={t("form.ph.amount")}
-                {...register("amount", { required: t("form.required.amount") })}
+                {...register("amount", {
+                  required: t("form.required.amount"),
+                  validate: (value) => {
+                    const parsed = Number(value.replace(",", "."));
+                    return (Number.isFinite(parsed) && parsed > 0) || t("form.invalid.amount");
+                  },
+                })}
               />
             </Field>
             <Field label={t("field.dueDate")}>
