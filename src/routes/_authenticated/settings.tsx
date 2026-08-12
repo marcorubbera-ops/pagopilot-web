@@ -50,7 +50,7 @@ function SettingsPage() {
 
   useEffect(() => {
     setLockOn(lockEnabled());
-    setLockSupported(biometricsSupported());
+    void biometricsSupported().then(setLockSupported);
   }, []);
 
   async function toggleLock(next: boolean) {

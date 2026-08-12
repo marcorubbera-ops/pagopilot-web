@@ -1,16 +1,44 @@
 /**
- * App lock with Face ID / Touch ID.
+ * App lock with Face ID / Touch ID / fingerprint.
  *
- * Uses a device-bound WebAuthn passkey purely as a local unlock gate: the
- * credential never leaves the device and no server verification is needed,
- * because the user is already authenticated with the backend. The lock only
- * protects the on-screen data after the app is (re)opened.
+ * Native (Android/iOS): gates access behind the OS's own biometric prompt
+ * via a small Capacitor plugin — there's no separate credential to manage,
+ * each unlock is just a fresh challenge against whatever the OS already has
+ * enrolled.
+ *
+ * Web: uses a device-bound WebAuthn passkey purely as a local unlock gate —
+ * the credential never leaves the device and no server verification is
+ * needed, because the user is already authenticated with the backend. A
+ * real browser's WebAuthn implementation isn't reliably available inside
+ * the Android app's embedded WebView, which is why native gets its own path.
  */
+import { Capacitor, registerPlugin } from "@capacitor/core";
+
+interface BiometricAuthPlugin {
+  isAvailable(): Promise<{ available: boolean }>;
+  authenticate(options: { title: string; subtitle?: string }): Promise<void>;
+}
+
+const NativeBiometricAuth = registerPlugin<BiometricAuthPlugin>("BiometricAuth");
 
 const STORAGE_KEY = "pagopilot.applock.credential";
 const SESSION_KEY = "pagopilot.applock.unlocked";
+/** Stored on native platforms in place of a WebAuthn credential id — there's nothing to enrol. */
+const NATIVE_MARKER = "native";
 
-export function biometricsSupported(): boolean {
+function isNative(): boolean {
+  return Capacitor.isNativePlatform();
+}
+
+export async function biometricsSupported(): Promise<boolean> {
+  if (isNative()) {
+    try {
+      const { available } = await NativeBiometricAuth.isAvailable();
+      return available;
+    } catch {
+      return false;
+    }
+  }
   return (
     typeof window !== "undefined" &&
     typeof window.PublicKeyCredential !== "undefined" &&
@@ -53,7 +81,14 @@ function randomChallenge(): ArrayBuffer {
 
 /** Enrols the device biometrics and turns the lock on. */
 export async function enableLock(email: string): Promise<void> {
-  if (!biometricsSupported()) throw new Error("unsupported");
+  if (isNative()) {
+    await NativeBiometricAuth.authenticate({ title: "PagoPilot" });
+    window.localStorage.setItem(STORAGE_KEY, NATIVE_MARKER);
+    markUnlocked();
+    return;
+  }
+
+  if (!(await biometricsSupported())) throw new Error("unsupported");
   const userId = randomChallenge();
   const credential = (await navigator.credentials.create({
     publicKey: {
@@ -78,13 +113,20 @@ export async function enableLock(email: string): Promise<void> {
   markUnlocked();
 }
 
-/** Prompts Face ID / Touch ID and unlocks the app for this session. */
+/** Prompts Face ID / Touch ID / fingerprint and unlocks the app for this session. */
 export async function unlockWithBiometrics(): Promise<void> {
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (!stored) {
     markUnlocked();
     return;
   }
+
+  if (stored === NATIVE_MARKER) {
+    await NativeBiometricAuth.authenticate({ title: "PagoPilot" });
+    markUnlocked();
+    return;
+  }
+
   const assertion = await navigator.credentials.get({
     publicKey: {
       challenge: randomChallenge(),
