@@ -95,7 +95,10 @@ export const TONE_CLASSES: Record<Tone, string> = {
 
 export function formatAmount(amount: number | string | null, lang: Lang = "it"): string {
   const value = typeof amount === "string" ? Number(amount) : (amount ?? 0);
-  return new Intl.NumberFormat(LOCALES[lang], { style: "currency", currency: "EUR" }).format(value);
+  return new Intl.NumberFormat(LOCALES[lang], { style: "currency", currency: "EUR" })
+    .format(value)
+    .replace(/\s+€/, "€")
+    .replace(/€\s+/, "€");
 }
 
 export function formatDate(

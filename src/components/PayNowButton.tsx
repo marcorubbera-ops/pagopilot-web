@@ -32,6 +32,13 @@ export function PayNowButton({ payment, className }: { payment: Payment; classNa
       </h2>
       <p className="mt-2 text-[13px] text-muted-foreground">{t("pay.hint")}</p>
 
+      <Button size="lg" className="mt-4 w-full" asChild>
+        <a href={pagopaCheckoutUrl(lang)} target="_blank" rel="noopener noreferrer">
+          <ExternalLink className="size-4" aria-hidden />{" "}
+          {t("pay.checkout", { amount: formatAmount(payment.amount, lang) })}
+        </a>
+      </Button>
+
       <div className="mt-3 space-y-2">
         <CodeRow
           label={t("field.noticeNumber")}
@@ -44,13 +51,6 @@ export function PayNowButton({ payment, className }: { payment: Payment; classNa
           onCopy={() => void copy(notice.taxCode, t("pay.copiedTaxCode", { code: notice.taxCode }))}
         />
       </div>
-
-      <Button size="lg" className="mt-4 w-full" asChild>
-        <a href={pagopaCheckoutUrl(lang)} target="_blank" rel="noopener noreferrer">
-          <ExternalLink className="size-4" aria-hidden />{" "}
-          {t("pay.checkout", { amount: formatAmount(payment.amount, lang) })}
-        </a>
-      </Button>
     </section>
   );
 }
