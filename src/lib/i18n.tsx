@@ -206,13 +206,16 @@ const it = {
   "detail.qr.title": "Codice QR di pagamento",
   "detail.qr.alt": "Codice QR per pagare {title}",
   "detail.qr.hint":
-    "Inquadralo con l'app della banca, o salvalo per pagare da un altro dispositivo.",
+    "Inquadralo con l'app della banca o IO, oppure salvalo o condividilo per pagare da un altro dispositivo.",
   "detail.qr.save": "Salva immagine QR",
+  "detail.qr.share": "Condividi",
+  "detail.qr.shareFailed": "Condivisione non riuscita",
   "pay.title": "Paga ora",
   "pay.hint":
     "Ti portiamo sul sito ufficiale pagoPA: il codice avviso viene copiato, ti basta incollarlo con il codice fiscale dell'ente.",
   "pay.checkout": "Paga {amount} su pagoPA",
   "pay.io": "Apri l'app IO",
+  "pay.io.hint": "Una volta aperta, scansiona il codice QR qui sotto per pagare.",
   "pay.copied": "Codice avviso copiato: {code}",
   "pay.now": "Paga",
 
@@ -535,13 +538,16 @@ const en: Record<TranslationKey, string> = {
   "import.uploading": "Uploading…",
   "detail.qr.title": "Payment QR code",
   "detail.qr.alt": "QR code to pay {title}",
-  "detail.qr.hint": "Scan it with your bank app, or save it to pay from another device.",
+  "detail.qr.hint": "Scan it with your bank app or IO, or save or share it to pay from another device.",
   "detail.qr.save": "Save QR image",
+  "detail.qr.share": "Share",
+  "detail.qr.shareFailed": "Couldn't share",
   "pay.title": "Pay now",
   "pay.hint":
     "We open the official pagoPA site: the notice code is copied, just paste it along with the payee tax code.",
   "pay.checkout": "Pay {amount} on pagoPA",
   "pay.io": "Open the IO app",
+  "pay.io.hint": "Once it's open, scan the QR code below to pay.",
   "pay.copied": "Notice code copied: {code}",
   "pay.now": "Pay",
 

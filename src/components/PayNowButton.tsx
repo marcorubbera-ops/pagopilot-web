@@ -38,6 +38,7 @@ export function PayNowButton({ payment, className }: { payment: Payment; classNa
         <Button variant="secondary" size="lg" onClick={openIoApp}>
           <Smartphone className="size-4" aria-hidden /> {t("pay.io")}
         </Button>
+        <p className="text-center text-[12px] text-muted-foreground">{t("pay.io.hint")}</p>
       </div>
     </section>
   );

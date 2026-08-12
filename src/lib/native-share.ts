@@ -1,0 +1,38 @@
+/**
+ * Shares a file via the OS share sheet — native through Capacitor's
+ * Filesystem + Share plugins, web through the Web Share API where the
+ * browser supports sharing files at all.
+ */
+import { Capacitor } from "@capacitor/core";
+import { Directory, Filesystem } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+    reader.onerror = () => reject(new Error("read_failed"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+export function nativeShareSupported(): boolean {
+  return Capacitor.isNativePlatform();
+}
+
+/** Writes a blob to the app's cache and opens the native share sheet. */
+export async function shareNativeFile(blob: Blob, filename: string, title?: string): Promise<void> {
+  const base64 = await blobToBase64(blob);
+  const { uri } = await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache });
+  await Share.share({ url: uri, title: title ?? filename });
+}
+
+/** Whether the Web Share API is available and can share this specific file. */
+export function webShareSupportsFile(file: File): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [file] })
+  );
+}

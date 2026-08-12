@@ -5,12 +5,10 @@
  * browser (same as the rest of the app), and jsPDF needs `document`/`Blob`,
  * which the Cloudflare Workers backend doesn't have.
  */
-import { Capacitor } from "@capacitor/core";
-import { Directory, Filesystem } from "@capacitor/filesystem";
-import { Share } from "@capacitor/share";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Lang, Translate } from "@/lib/i18n";
+import { nativeShareSupported, shareNativeFile } from "@/lib/native-share";
 import {
   categoryLabel,
   effectiveStatus,
@@ -104,19 +102,8 @@ export function paymentsToPdfBlob(payments: Payment[], t: Translate, lang: Lang)
  * URL before the browser has had a chance to read it.
  */
 export async function downloadExportFile(blob: Blob, filename: string): Promise<void> {
-  if (Capacitor.isNativePlatform()) {
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
-      reader.onerror = () => reject(new Error("read_failed"));
-      reader.readAsDataURL(blob);
-    });
-    const { uri } = await Filesystem.writeFile({
-      path: filename,
-      data: base64,
-      directory: Directory.Cache,
-    });
-    await Share.share({ url: uri, title: filename });
+  if (nativeShareSupported()) {
+    await shareNativeFile(blob, filename);
     return;
   }
 
