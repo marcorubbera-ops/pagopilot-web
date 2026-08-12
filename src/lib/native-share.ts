@@ -36,3 +36,26 @@ export function webShareSupportsFile(file: File): boolean {
     navigator.canShare({ files: [file] })
   );
 }
+
+/**
+ * Saves a file. Native has no silent write access to public storage, so it
+ * opens the share sheet instead (same as shareNativeFile — "Save to Files"
+ * is one of the options there). On web, a plain `<a download>` click only
+ * works reliably when the anchor is actually attached to the DOM, and the
+ * blob URL must outlive the click, not be revoked immediately after it.
+ */
+export async function saveFile(blob: Blob, filename: string): Promise<void> {
+  if (nativeShareSupported()) {
+    await shareNativeFile(blob, filename);
+    return;
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

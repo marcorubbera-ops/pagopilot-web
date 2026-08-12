@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { Download, QrCode, Share2 } from "lucide-react";
+import { Download, QrCode, Share2, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
-import { nativeShareSupported, shareNativeFile, webShareSupportsFile } from "@/lib/native-share";
+import { nativeShareSupported, saveFile, shareNativeFile, webShareSupportsFile } from "@/lib/native-share";
+import { openIoApp } from "@/lib/pay-links";
 import { pagoPaPayload, type Payment } from "@/lib/payments";
 
 /**
@@ -37,9 +38,24 @@ export function PaymentQrCode({ payment }: { payment: Payment }) {
 
   const fileName = `${payment.title.replace(/[^\w-]+/g, "-").slice(0, 40) || "pagamento"}-qr.png`;
 
+  async function qrBlob(): Promise<Blob> {
+    const response = await fetch(dataUrl!);
+    return response.blob();
+  }
+
+  async function handleSave() {
+    try {
+      await saveFile(await qrBlob(), fileName);
+    } catch (error) {
+      if ((error as Error)?.name !== "AbortError") {
+        toast.error(t("detail.qr.shareFailed"));
+      }
+    }
+  }
+
   async function handleShare() {
     try {
-      const blob = await fetch(dataUrl!).then((res) => res.blob());
+      const blob = await qrBlob();
 
       if (nativeShareSupported()) {
         await shareNativeFile(blob, fileName, payment.title);
@@ -53,13 +69,8 @@ export function PaymentQrCode({ payment }: { payment: Payment }) {
       }
 
       // No share capability at all (older desktop browser) — fall back to
-      // the same download the "Save" button does.
-      const link = document.createElement("a");
-      link.href = dataUrl!;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      // a plain save.
+      await saveFile(blob, fileName);
     } catch (error) {
       // The user closing the share sheet isn't a failure worth a toast.
       if ((error as Error)?.name !== "AbortError") {
@@ -81,14 +92,15 @@ export function PaymentQrCode({ payment }: { payment: Payment }) {
         height={192}
       />
       <p className="mt-3 text-[13px] text-muted-foreground">{t("detail.qr.hint")}</p>
-      <div className="mt-3 flex justify-center gap-2">
-        <Button variant="secondary" size="sm" asChild>
-          <a href={dataUrl} download={fileName}>
-            <Download className="size-4" aria-hidden /> {t("detail.qr.save")}
-          </a>
+      <div className="mt-3 flex flex-wrap justify-center gap-2">
+        <Button variant="secondary" size="sm" onClick={() => void handleSave()}>
+          <Download className="size-4" aria-hidden /> {t("detail.qr.save")}
         </Button>
         <Button variant="secondary" size="sm" onClick={() => void handleShare()}>
           <Share2 className="size-4" aria-hidden /> {t("detail.qr.share")}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={openIoApp}>
+          <Smartphone className="size-4" aria-hidden /> {t("pay.io")}
         </Button>
       </div>
     </section>

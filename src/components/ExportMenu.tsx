@@ -8,7 +8,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/lib/i18n";
-import { downloadExportFile, exportFilename, paymentsToCsv, paymentsToPdfBlob } from "@/lib/export";
+import { exportFilename, paymentsToCsv, paymentsToPdfBlob } from "@/lib/export";
+import { saveFile } from "@/lib/native-share";
 import type { Payment } from "@/lib/payments";
 
 /** CSV/PDF export, gated behind Premium — shared by Settings and Stats. */
@@ -35,7 +36,7 @@ export function ExportMenu({
         format === "csv"
           ? new Blob([paymentsToCsv(payments)], { type: "text/csv;charset=utf-8" })
           : paymentsToPdfBlob(payments, t, lang);
-      await downloadExportFile(blob, exportFilename(format));
+      await saveFile(blob, exportFilename(format));
       toast.success(t("stats.exported"));
     } catch {
       toast.error(t("stats.exportFailed"));

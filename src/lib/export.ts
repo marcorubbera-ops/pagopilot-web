@@ -8,7 +8,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Lang, Translate } from "@/lib/i18n";
-import { nativeShareSupported, shareNativeFile } from "@/lib/native-share";
 import {
   categoryLabel,
   effectiveStatus,
@@ -94,25 +93,3 @@ export function paymentsToPdfBlob(payments: Payment[], t: Translate, lang: Lang)
   return doc.output("blob");
 }
 
-/**
- * Saves an exported file. On native Android, `<a download>` inside a
- * remote-loaded Capacitor WebView isn't reliable — writes to the app's cache
- * and hands it to the OS share sheet instead. On web, the fix is just doing
- * the anchor click properly: attached to the DOM, and not revoking the blob
- * URL before the browser has had a chance to read it.
- */
-export async function downloadExportFile(blob: Blob, filename: string): Promise<void> {
-  if (nativeShareSupported()) {
-    await shareNativeFile(blob, filename);
-    return;
-  }
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
