@@ -10,7 +10,17 @@
  */
 
 /** Official pagoPA Checkout — "Paga un avviso" (guest, card/bank/apps). */
-export const PAGOPA_CHECKOUT_URL = "https://checkout.pagopa.it/inserisci-dati-avviso";
+const PAGOPA_CHECKOUT_URL = "https://checkout.pagopa.it/inserisci-dati-avviso";
+
+/**
+ * pagoPA Checkout picks its language from `?lng=` (its i18next querystring
+ * key — not the more obvious `lang`), read once on a fresh session and then
+ * cached in its own localStorage. Without it, the page falls back to the
+ * browser/WebView's locale, which for many users defaults to English.
+ */
+export function pagopaCheckoutUrl(lang: "it" | "en"): string {
+  return `${PAGOPA_CHECKOUT_URL}?lng=${lang}`;
+}
 /** IO app custom scheme (opens the app when installed). */
 export const IO_APP_SCHEME = "ioit://";
 /** Public fallback when the IO app is not installed. */

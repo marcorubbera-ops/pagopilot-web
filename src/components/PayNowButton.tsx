@@ -2,7 +2,7 @@ import { CreditCard, ExternalLink, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
-import { PAGOPA_CHECKOUT_URL, openIoApp, payableNotice } from "@/lib/pay-links";
+import { openIoApp, pagopaCheckoutUrl, payableNotice } from "@/lib/pay-links";
 import { formatAmount, type Payment } from "@/lib/payments";
 
 /**
@@ -21,7 +21,7 @@ export function PayNowButton({ payment, className }: { payment: Payment; classNa
     } catch {
       // Clipboard can be blocked: the Checkout page still works manually.
     }
-    window.open(PAGOPA_CHECKOUT_URL, "_blank", "noopener,noreferrer");
+    window.open(pagopaCheckoutUrl(lang), "_blank", "noopener,noreferrer");
   };
 
   return (
