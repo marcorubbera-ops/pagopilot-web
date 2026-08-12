@@ -59,5 +59,7 @@
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />
         </intent>
+        <!-- Lets getLaunchIntentForPackage() see the IO app for the "Apri l'app IO" hand-off. -->
+        <package android:name="it.pagopa.io.app" />
     </queries>
 </manifest>

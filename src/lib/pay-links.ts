@@ -8,6 +8,20 @@
  * so the user only has to paste them. The IO app is offered as an alternative
  * via its custom scheme, with a fallback to the public IO page.
  */
+import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
+
+interface AppLauncherPlugin {
+  openPackageOrFallback(options: {
+    packageName: string;
+    fallbackUrl?: string;
+  }): Promise<{ opened: "app" | "fallback" }>;
+}
+
+const AppLauncher = registerPlugin<AppLauncherPlugin>("AppLauncher");
+
+/** IO's Android package name, used for the reliable native "is it installed" check. */
+const IO_APP_PACKAGE = "it.pagopa.io.app";
 
 /** Official pagoPA Checkout — "Paga un avviso" (guest, card/bank/apps). */
 const PAGOPA_CHECKOUT_URL = "https://checkout.pagopa.it/inserisci-dati-avviso";
@@ -20,6 +34,22 @@ const PAGOPA_CHECKOUT_URL = "https://checkout.pagopa.it/inserisci-dati-avviso";
  */
 export function pagopaCheckoutUrl(lang: "it" | "en"): string {
   return `${PAGOPA_CHECKOUT_URL}?lng=${lang}`;
+}
+
+/**
+ * Opens a URL for the pay hand-off. Native uses an in-app Chrome Custom Tab
+ * (via @capacitor/browser) — it overlays the app instead of switching to a
+ * separate Chrome window, and a single tap returns straight to PagoPilot.
+ * Deliberately not a raw embedded WebView: Custom Tabs shares Chrome's own
+ * cookies/session/saved cards, which a bare WebView wouldn't, and payment
+ * flows sometimes rely on that (bank app hand-offs, saved autofill, etc).
+ */
+export async function openCheckout(url: string): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    await Browser.open({ url });
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 /** IO app custom scheme (opens the app when installed). */
 export const IO_APP_SCHEME = "ioit://";
@@ -42,8 +72,25 @@ export function payableNotice(payment: {
   return { noticeNumber, taxCode };
 }
 
-/** Opens the IO app, falling back to the web page when the scheme is unhandled. */
-export function openIoApp(): void {
+/**
+ * Opens the IO app, falling back to the web page when it's not installed.
+ *
+ * Native: asks Android's package manager directly whether IO is installed —
+ * reliable, no guessing. Web has no such API, so it falls back to the
+ * classic custom-scheme-plus-timeout trick (best effort: it only opens the
+ * fallback page if the browser is *still here* after a short wait, but
+ * that "still here" check isn't guaranteed to reflect whether the app
+ * actually opened).
+ */
+export async function openIoApp(): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    await AppLauncher.openPackageOrFallback({
+      packageName: IO_APP_PACKAGE,
+      fallbackUrl: IO_APP_URL,
+    });
+    return;
+  }
+
   if (typeof window === "undefined") return;
   const start = Date.now();
   const fallback = window.setTimeout(() => {

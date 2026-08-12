@@ -99,7 +99,7 @@ export function PaymentQrCode({ payment }: { payment: Payment }) {
         <Button variant="secondary" size="sm" onClick={() => void handleShare()}>
           <Share2 className="size-4" aria-hidden /> {t("detail.qr.share")}
         </Button>
-        <Button variant="secondary" size="sm" onClick={openIoApp}>
+        <Button variant="secondary" size="sm" onClick={() => void openIoApp()}>
           <Smartphone className="size-4" aria-hidden /> {t("pay.io")}
         </Button>
       </div>

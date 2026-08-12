@@ -2,7 +2,7 @@ import { Copy, CreditCard, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
-import { pagopaCheckoutUrl, payableNotice } from "@/lib/pay-links";
+import { openCheckout, pagopaCheckoutUrl, payableNotice } from "@/lib/pay-links";
 import { formatAmount, type Payment } from "@/lib/payments";
 
 /**
@@ -32,11 +32,13 @@ export function PayNowButton({ payment, className }: { payment: Payment; classNa
       </h2>
       <p className="mt-2 text-[13px] text-muted-foreground">{t("pay.hint")}</p>
 
-      <Button size="lg" className="mt-4 w-full" asChild>
-        <a href={pagopaCheckoutUrl(lang)} target="_blank" rel="noopener noreferrer">
-          <ExternalLink className="size-4" aria-hidden />{" "}
-          {t("pay.checkout", { amount: formatAmount(payment.amount, lang) })}
-        </a>
+      <Button
+        size="lg"
+        className="mt-4 w-full"
+        onClick={() => void openCheckout(pagopaCheckoutUrl(lang))}
+      >
+        <ExternalLink className="size-4" aria-hidden />{" "}
+        {t("pay.checkout", { amount: formatAmount(payment.amount, lang) })}
       </Button>
 
       <div className="mt-3 space-y-2">
