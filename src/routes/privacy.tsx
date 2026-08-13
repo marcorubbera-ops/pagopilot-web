@@ -133,13 +133,28 @@ function PrivacyIt() {
 
       <h2>Conservazione dei dati</h2>
       <p>
-        Conserviamo i tuoi dati finché il tuo account resta attivo. Puoi eliminare singoli pagamenti
-        in qualsiasi momento dall&apos;app. Per richiedere la cancellazione completa del tuo account
-        e di tutti i dati associati, scrivi a{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary">
+        Conserviamo i tuoi dati finché il tuo account resta attivo. Vedi sotto come richiedere la
+        cancellazione di singoli dati o dell&apos;intero account.
+      </p>
+
+      <h2 id="delete-data">Come richiedere la cancellazione dei dati</h2>
+      <p>
+        <strong>Per eliminare un singolo pagamento</strong> (titolo, importo, scadenza, ricevuta o
+        documento allegato): aprilo dall&apos;app e tocca &quot;Elimina&quot;. È immediato, non
+        richiede di cancellare l&apos;account, e il documento eventualmente allegato viene rimosso
+        insieme al pagamento.
+      </p>
+      <p>
+        <strong>Per cancellare l&apos;intero account e tutti i dati associati</strong> (pagamenti,
+        documenti caricati, dati del profilo): scrivi a{" "}
+        <a href={`mailto:${CONTACT_EMAIL}?subject=Richiesta%20cancellazione%20dati`} className="text-primary">
           {CONTACT_EMAIL}
-        </a>
-        .
+        </a>{" "}
+        dall&apos;indirizzo email associato al tuo account, indicando &quot;Richiesta cancellazione
+        dati&quot;. Elaboriamo la richiesta entro 30 giorni: account, pagamenti e documenti caricati
+        vengono cancellati in modo permanente. Le sole eccezioni sono le informazioni che siamo
+        tenuti a conservare per obblighi di legge (es. fiscali) e le copie di backup residue, che
+        vengono sovrascritte entro 90 giorni.
       </p>
 
       <h2>I tuoi diritti</h2>
@@ -267,13 +282,27 @@ function PrivacyEn() {
 
       <h2>Data retention</h2>
       <p>
-        We keep your data for as long as your account stays active. You can delete individual
-        payments at any time from within the app. To request full deletion of your account and all
-        associated data, email{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary">
+        We keep your data for as long as your account stays active. See below for how to request
+        deletion of individual data or your whole account.
+      </p>
+
+      <h2 id="delete-data">How to request data deletion</h2>
+      <p>
+        <strong>To delete a single payment</strong> (title, amount, due date, receipt or attached
+        document): open it in the app and tap &quot;Delete&quot;. It&apos;s immediate, doesn&apos;t
+        require deleting your account, and any attached document is removed along with the payment.
+      </p>
+      <p>
+        <strong>To delete your entire account and all associated data</strong> (payments, uploaded
+        documents, profile data): email{" "}
+        <a href={`mailto:${CONTACT_EMAIL}?subject=Data%20deletion%20request`} className="text-primary">
           {CONTACT_EMAIL}
-        </a>
-        .
+        </a>{" "}
+        from the email address linked to your account, with the subject &quot;Data deletion
+        request&quot;. We process requests within 30 days: your account, payments and uploaded
+        documents are permanently deleted. The only exceptions are information we&apos;re legally
+        required to retain (e.g. for tax purposes) and residual backup copies, which are overwritten
+        within 90 days.
       </p>
 
       <h2>Your rights</h2>
