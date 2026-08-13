@@ -6,14 +6,17 @@ import {
   ChevronLeft,
   Copy,
   CircleCheck,
-  Paperclip,
+  FileCheck2,
   Share2,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { AttachReceiptButton } from "@/components/AttachReceiptButton";
 import { PaymentQrCode } from "@/components/PaymentQrCode";
 import { PayNowButton } from "@/components/PayNowButton";
+import { supabase } from "@/integrations/supabase/client";
+import { openUrl } from "@/lib/native-share";
 import { deletePayment, getPayment, setPaymentStatus } from "@/lib/payments.functions";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -87,6 +90,19 @@ function PaymentDetailPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  async function viewReceipt() {
+    if (!payment?.receipt_url) return;
+    try {
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(payment.receipt_url, 300);
+      if (error || !data?.signedUrl) throw error ?? new Error("no_url");
+      await openUrl(data.signedUrl);
+    } catch {
+      toast.error(t("detail.attach.viewFailed"));
+    }
+  }
+
   if (isLoading) {
     return <p className="p-6 text-sm text-muted-foreground">{t("detail.loading")}</p>;
   }
@@ -137,13 +153,13 @@ function PaymentDetailPage() {
           >
             <CircleCheck className="size-4" aria-hidden /> {isPaid ? t("detail.markUnpaid") : t("detail.markPaid")}
           </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => toast.info(t("detail.attach.soon"))}
-          >
-            <Paperclip className="size-4" aria-hidden /> {t("detail.attach")}
-          </Button>
+          {payment.receipt_url ? (
+            <Button variant="secondary" size="lg" onClick={() => void viewReceipt()}>
+              <FileCheck2 className="size-4" aria-hidden /> {t("detail.attach.view")}
+            </Button>
+          ) : (
+            <AttachReceiptButton paymentId={payment.id} />
+          )}
         </div>
 
         {isPaid ? null : <PayNowButton payment={payment} />}

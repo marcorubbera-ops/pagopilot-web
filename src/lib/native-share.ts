@@ -4,6 +4,7 @@
  * browser supports sharing files at all.
  */
 import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 
@@ -58,4 +59,17 @@ export async function saveFile(blob: Blob, filename: string): Promise<void> {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Opens a URL for viewing. Native uses an in-app Chrome Custom Tab (an
+ * overlay on top of the app, one tap back) instead of fully switching away
+ * to a separate Chrome window.
+ */
+export async function openUrl(url: string): Promise<void> {
+  if (nativeShareSupported()) {
+    await Browser.open({ url });
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
 }

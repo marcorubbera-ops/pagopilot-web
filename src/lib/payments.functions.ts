@@ -6,7 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { stripUndefined } from "@/lib/payments";
-import { getImportQuota, getStorageQuota } from "@/lib/profile.functions";
+import { getImportQuota, getStorageQuota, MAX_ACCOUNT_STORAGE_BYTES } from "@/lib/profile.functions";
 
 const paymentInput = z.object({
   title: z.string().trim().min(1, "Title is required").max(120),
@@ -174,15 +174,25 @@ export const attachDocument = createServerFn({ method: "POST" })
     }
 
     // Trust nothing the client claims to have uploaded — confirm the object
-    // actually landed in storage before linking a payment to it.
+    // actually landed in storage before linking a payment to it. Listing the
+    // whole folder (not just this file) also lets us total the account's
+    // storage usage in the same call, for the size-cap check below.
     const lastSlash = data.path.lastIndexOf("/");
     const folder = lastSlash === -1 ? "" : data.path.slice(0, lastSlash);
     const filename = data.path.slice(lastSlash + 1);
     const { data: listing, error: listError } = await context.supabase.storage
       .from("documents")
-      .list(folder, { search: filename });
+      .list(folder);
     if (listError || !listing?.some((file) => file.name === filename)) {
       throw new Error("Upload not found. Please try attaching the document again.");
+    }
+
+    // Hard ceiling regardless of plan — Premium's "unlimited" only removes
+    // the document-count limit below, not this infra safety net.
+    const totalBytes = listing.reduce((sum, file) => sum + (file.metadata?.size ?? 0), 0);
+    if (totalBytes > MAX_ACCOUNT_STORAGE_BYTES) {
+      await context.supabase.storage.from("documents").remove([data.path]);
+      throw new Error("Storage limit reached for this account. Delete an attachment to free up space.");
     }
 
     // Only a payment with no attachment yet adds to the archive count —

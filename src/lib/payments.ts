@@ -9,6 +9,9 @@ import { LOCALES } from "@/lib/i18n";
 export type Payment = Tables<"payments">;
 export type Category = Tables<"categories">;
 
+/** Shared cap for any single uploaded document (import photo/PDF, receipt). */
+export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+
 export type PaymentStatus = Payment["status"];
 
 export const PAYMENT_STATUSES: PaymentStatus[] = [

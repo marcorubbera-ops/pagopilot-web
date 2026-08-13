@@ -9,7 +9,7 @@
  * via its custom scheme, with a fallback to the public IO page.
  */
 import { Capacitor, registerPlugin } from "@capacitor/core";
-import { Browser } from "@capacitor/browser";
+import { openUrl } from "@/lib/native-share";
 
 interface AppLauncherPlugin {
   openPackageOrFallback(options: {
@@ -37,20 +37,13 @@ export function pagopaCheckoutUrl(lang: "it" | "en"): string {
 }
 
 /**
- * Opens a URL for the pay hand-off. Native uses an in-app Chrome Custom Tab
- * (via @capacitor/browser) — it overlays the app instead of switching to a
- * separate Chrome window, and a single tap returns straight to PagoPilot.
- * Deliberately not a raw embedded WebView: Custom Tabs shares Chrome's own
- * cookies/session/saved cards, which a bare WebView wouldn't, and payment
- * flows sometimes rely on that (bank app hand-offs, saved autofill, etc).
+ * Opens the pagoPA Checkout hand-off. Deliberately not a raw embedded
+ * WebView: the in-app Custom Tab (see lib/native-share.ts) shares Chrome's
+ * own cookies/session/saved cards, which a bare WebView wouldn't, and
+ * payment flows sometimes rely on that (bank app hand-offs, autofill, etc).
  */
-export async function openCheckout(url: string): Promise<void> {
-  if (Capacitor.isNativePlatform()) {
-    await Browser.open({ url });
-    return;
-  }
-  window.open(url, "_blank", "noopener,noreferrer");
-}
+export const openCheckout = openUrl;
+
 /** IO app custom scheme (opens the app when installed). */
 export const IO_APP_SCHEME = "ioit://";
 /** Public fallback when the IO app is not installed. */

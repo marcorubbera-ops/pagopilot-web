@@ -12,6 +12,14 @@ export const FREE_IMPORT_LIMIT = 5;
 /** Total documents (image, PDF or receipt) a free-plan account can keep attached at once. */
 export const FREE_STORAGE_LIMIT = 20;
 
+/**
+ * Hard ceiling on total bytes stored per account, in the shared "documents"
+ * bucket — applies to every account, Premium included. This isn't a
+ * monetization limit like FREE_STORAGE_LIMIT; it's an infra safety net so no
+ * single account can run up the (currently free-tier) Supabase Storage bill.
+ */
+export const MAX_ACCOUNT_STORAGE_BYTES = 300 * 1024 * 1024;
+
 /** Premium status + this month's import usage, shared by every call site that needs to enforce the free-tier limit. */
 export async function getImportQuota(
   supabase: SupabaseClient,

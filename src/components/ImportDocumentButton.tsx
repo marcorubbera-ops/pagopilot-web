@@ -20,9 +20,7 @@ import { extractPaymentFromDocument, type ExtractedPayment } from "@/lib/documen
 import { readQrFromImage } from "@/lib/pagopa-qr";
 import { attachDocument, createPayment } from "@/lib/payments.functions";
 import { getProfile } from "@/lib/profile.functions";
-import { CATEGORY_IDS, type PaymentFormValues } from "@/lib/payments";
-
-const MAX_BYTES = 10 * 1024 * 1024;
+import { CATEGORY_IDS, MAX_DOCUMENT_BYTES, type PaymentFormValues } from "@/lib/payments";
 
 function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -109,7 +107,7 @@ export function ImportDocumentButton({ className }: { className?: string }) {
   }
 
   async function handleFile(file: File) {
-    if (file.size > MAX_BYTES) {
+    if (file.size > MAX_DOCUMENT_BYTES) {
       toast.error(t("import.tooLarge"));
       return;
     }
