@@ -6,7 +6,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { stripUndefined } from "@/lib/payments";
-import { getImportQuota, getStorageQuota, MAX_ACCOUNT_STORAGE_BYTES } from "@/lib/profile.functions";
+import {
+  FREE_STORAGE_BYTES,
+  getImportQuota,
+  getStorageQuota,
+  PREMIUM_STORAGE_BYTES,
+} from "@/lib/profile.functions";
 
 const paymentInput = z.object({
   title: z.string().trim().min(1, "Title is required").max(120),
@@ -187,10 +192,12 @@ export const attachDocument = createServerFn({ method: "POST" })
       throw new Error("Upload not found. Please try attaching the document again.");
     }
 
-    // Hard ceiling regardless of plan — Premium's "unlimited" only removes
-    // the document-count limit below, not this infra safety net.
+    // Byte ceiling, tiered by plan — Premium's "unlimited" only removes the
+    // document-count limit below, not this one.
+    const storage = await getStorageQuota(context.supabase, context.userId);
     const totalBytes = listing.reduce((sum, file) => sum + (file.metadata?.size ?? 0), 0);
-    if (totalBytes > MAX_ACCOUNT_STORAGE_BYTES) {
+    const byteCap = storage.premium ? PREMIUM_STORAGE_BYTES : FREE_STORAGE_BYTES;
+    if (totalBytes > byteCap) {
       await context.supabase.storage.from("documents").remove([data.path]);
       throw new Error("Storage limit reached for this account. Delete an attachment to free up space.");
     }
@@ -206,11 +213,8 @@ export const attachDocument = createServerFn({ method: "POST" })
     const alreadyInArchive = Boolean(
       existing.image_url ?? existing.pdf_url ?? existing.receipt_url,
     );
-    if (!alreadyInArchive) {
-      const storage = await getStorageQuota(context.supabase, context.userId);
-      if (storage.storageLeft !== null && storage.storageLeft <= 0) {
-        throw new Error("Free storage limit reached. Upgrade to Premium for unlimited storage.");
-      }
+    if (!alreadyInArchive && storage.storageLeft !== null && storage.storageLeft <= 0) {
+      throw new Error("Free storage limit reached. Upgrade to Premium for unlimited storage.");
     }
 
     const patch =

@@ -10,15 +10,16 @@ import { PREMIUM_ENTITLEMENT } from "@/lib/revenuecat-types";
 export const FREE_IMPORT_LIMIT = 5;
 
 /** Total documents (image, PDF or receipt) a free-plan account can keep attached at once. */
-export const FREE_STORAGE_LIMIT = 20;
+export const FREE_STORAGE_LIMIT = 10;
 
 /**
- * Hard ceiling on total bytes stored per account, in the shared "documents"
- * bucket — applies to every account, Premium included. This isn't a
- * monetization limit like FREE_STORAGE_LIMIT; it's an infra safety net so no
- * single account can run up the (currently free-tier) Supabase Storage bill.
+ * Ceiling on total bytes stored per account in the shared "documents"
+ * bucket, tiered by plan — the project runs on Supabase's free tier
+ * (1GB total), so both numbers exist to keep any single account from
+ * running up that budget, not as a marketing figure.
  */
-export const MAX_ACCOUNT_STORAGE_BYTES = 300 * 1024 * 1024;
+export const FREE_STORAGE_BYTES = 50 * 1024 * 1024;
+export const PREMIUM_STORAGE_BYTES = 300 * 1024 * 1024;
 
 /** Premium status + this month's import usage, shared by every call site that needs to enforce the free-tier limit. */
 export async function getImportQuota(
