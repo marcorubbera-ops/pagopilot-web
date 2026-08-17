@@ -717,7 +717,7 @@ type I18nValue = { lang: Lang; setLang: (lang: Lang) => void; t: Translate; loca
 
 const I18nContext = createContext<I18nValue | null>(null);
 
-function readStoredLang(fallback: Lang): Lang {
+export function readStoredLang(fallback: Lang): Lang {
   if (typeof window === "undefined") return fallback;
   const stored = window.localStorage.getItem(STORAGE_KEY);
   return stored === "en" || stored === "it" ? stored : fallback;

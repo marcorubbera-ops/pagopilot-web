@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: '.output/public',
 
   server: {
-    url: 'https://pagopilot-web.marcorubbera.workers.dev',
+    url: 'https://pagopilot.app',
   },
 };
 

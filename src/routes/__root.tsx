@@ -10,7 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
-import { I18nProvider, DEFAULT_LANG } from "@/lib/i18n";
+import { I18nProvider, DEFAULT_LANG, readStoredLang } from "@/lib/i18n";
 import { detectInitialLang } from "@/lib/i18n.functions";
 
 import appCss from "../styles.css?url";
@@ -78,7 +78,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
-    if (typeof document !== "undefined") return { initialLang: DEFAULT_LANG };
+    // Client-side re-runs (e.g. client navigations) must agree with whatever
+    // the server actually rendered, or React's hydration diffing throws —
+    // reuse the stored preference if the user ever toggled it, otherwise fall
+    // back to "en" to match detectInitialLang()'s own no-signal default.
+    if (typeof document !== "undefined") return { initialLang: readStoredLang("en") };
     try {
       return { initialLang: await detectInitialLang() };
     } catch {
