@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { ScanFace } from "lucide-react";
 import { toast } from "sonner";
-import logoMark from "@/assets/pagopilot-mark.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { isUnlockedForSession, lockEnabled, unlockWithBiometrics } from "@/lib/applock";
@@ -36,7 +35,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-8 text-center">
       <img
-        src={logoMark.url}
+        src="/favicon.png"
         alt="PagoPilot"
         className="size-20 rounded-[22px] shadow-sm"
         width={80}
