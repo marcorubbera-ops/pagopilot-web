@@ -100,7 +100,7 @@ function HomePage() {
         {months.map((month, index) => (
           <div
             key={month.key}
-            className="ios-card flex min-w-[220px] shrink-0 snap-center items-center justify-between p-4"
+            className="ios-card flex min-w-[220px] shrink-0 snap-start items-center justify-between p-4"
           >
             <div>
               <p className="text-[13px] capitalize text-muted-foreground">
