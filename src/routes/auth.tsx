@@ -3,12 +3,36 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { LanguageSwitcher } from "@/components/AppShell";
+
+const GOOGLE_AUTH_CALLBACK_URL = "com.pagopilot.app://auth-callback";
+
+/**
+ * Google blocks sign-in inside embedded WebViews, so on native the OAuth
+ * flow has to happen in a Custom Tab, which can't hand a session back to the
+ * app WebView directly — it needs a deep link. Supabase's default (implicit)
+ * flow puts the session tokens in the redirect URL's fragment.
+ */
+async function completeNativeOAuth(url: string) {
+  if (!url.startsWith(GOOGLE_AUTH_CALLBACK_URL)) return;
+  const hash = url.split("#")[1];
+  if (!hash) return;
+  const params = new URLSearchParams(hash);
+  const access_token = params.get("access_token");
+  const refresh_token = params.get("refresh_token");
+  if (access_token && refresh_token) {
+    await supabase.auth.setSession({ access_token, refresh_token });
+  }
+  await Browser.close().catch(() => {});
+}
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -40,7 +64,20 @@ function AuthPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) void router.navigate({ to: "/home" });
     });
-    return () => sub.subscription.unsubscribe();
+
+    let urlListener: { remove: () => void } | undefined;
+    if (Capacitor.isNativePlatform()) {
+      CapacitorApp.addListener("appUrlOpen", ({ url }) => {
+        void completeNativeOAuth(url);
+      }).then((handle) => {
+        urlListener = handle;
+      });
+    }
+
+    return () => {
+      sub.subscription.unsubscribe();
+      urlListener?.remove();
+    };
   }, [router]);
 
   const submit = async (event: React.FormEvent) => {
@@ -89,6 +126,20 @@ function AuthPage() {
   };
 
 const google = async () => {
+  if (Capacitor.isNativePlatform()) {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: GOOGLE_AUTH_CALLBACK_URL, skipBrowserRedirect: true },
+    });
+    if (error) {
+      toast.error(authErrorMessage(error, t));
+      return;
+    }
+    console.log("[oauth-debug] authorize url:", data.url);
+    if (data.url) await Browser.open({ url: data.url });
+    return;
+  }
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {

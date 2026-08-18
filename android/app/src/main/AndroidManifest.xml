@@ -18,6 +18,19 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!--
+              Google Sign-In redirect target: Supabase can't hand the OAuth
+              session back to a WebView directly (Google blocks sign-in
+              inside embedded WebViews), so the flow opens in a Custom Tab
+              and needs a deep link to bring the app back to the front with
+              the session tokens.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.pagopilot.app" android:host="auth-callback" />
+            </intent-filter>
         </activity>
 
         <provider
