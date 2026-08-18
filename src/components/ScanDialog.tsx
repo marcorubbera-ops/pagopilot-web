@@ -30,8 +30,15 @@ export function ScanDialog({ open, onOpenChange, onCapture }: ScanDialogProps) {
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const doneRef = useRef(false);
+  const hitStreakRef = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [found, setFound] = useState(false);
+
+  /** Consecutive detections required before capturing — waiting a beat past
+   * the first hit means the camera has actually settled/focused, since a QR
+   * decodes fine even mid-motion (error correction) while the full-res
+   * capture used for reading the rest of the document doesn't. */
+  const REQUIRED_STREAK = 3;
 
   const stop = useCallback(() => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -75,6 +82,7 @@ export function ScanDialog({ open, onOpenChange, onCapture }: ScanDialogProps) {
       setFound(false);
       setError(null);
       doneRef.current = false;
+      hitStreakRef.current = 0;
       return;
     }
 
@@ -108,9 +116,15 @@ export function ScanDialog({ open, onOpenChange, onCapture }: ScanDialogProps) {
               const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
               const code = jsQR(data, canvas.width, canvas.height, { inversionAttempts: "attemptBoth" });
               if (code?.data) {
+                hitStreakRef.current += 1;
                 setFound(true);
-                finish("scan-qr.jpg", parsePagoPaQr(code.data));
-                return;
+                if (hitStreakRef.current >= REQUIRED_STREAK) {
+                  finish("scan-qr.jpg", parsePagoPaQr(code.data));
+                  return;
+                }
+              } else {
+                hitStreakRef.current = 0;
+                setFound(false);
               }
             }
           }
