@@ -99,7 +99,12 @@ function StatsPage() {
   const categoryChartConfig = useMemo<ChartConfig>(() => {
     const config: ChartConfig = {};
     byCategory.forEach(([id], index) => {
-      config[id] = { label: categoryLabel(t, id), color: `var(--color-chart-${(index % 5) + 1})` };
+      // The raw --chart-N tokens, not the Tailwind-aliased --color-chart-N
+      // ones — those only get emitted into the CSS bundle when a literal
+      // utility class (e.g. fill-chart-1) is found in the source by
+      // Tailwind's static scanner, which a runtime var(--color-${id})
+      // string never is, so the alias gets tree-shaken out entirely.
+      config[id] = { label: categoryLabel(t, id), color: `var(--chart-${(index % 5) + 1})` };
     });
     return config;
   }, [byCategory, t]);
