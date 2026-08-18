@@ -17,7 +17,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { extractPaymentFromDocument, type ExtractedPayment } from "@/lib/documents.functions";
-import { readQrFromImage } from "@/lib/pagopa-qr";
+import { readQrFromImage, type PagoPaQr } from "@/lib/pagopa-qr";
 import { attachDocument, createPayment } from "@/lib/payments.functions";
 import { getProfile } from "@/lib/profile.functions";
 import { CATEGORY_IDS, MAX_DOCUMENT_BYTES, type PaymentFormValues } from "@/lib/payments";
@@ -106,7 +106,7 @@ export function ImportDocumentButton({ className }: { className?: string }) {
     void queryClient.invalidateQueries({ queryKey: ["reminders"] });
   }
 
-  async function handleFile(file: File) {
+  async function handleFile(file: File, preDecodedQr?: PagoPaQr | null) {
     if (file.size > MAX_DOCUMENT_BYTES) {
       toast.error(t("import.tooLarge"));
       return;
@@ -129,9 +129,12 @@ export function ImportDocumentButton({ className }: { className?: string }) {
       // Photos and PDFs both go through AI extraction. A QR code, when
       // present, is decoded locally and is already a complete, reliable
       // result on its own — so a failed AI call must not throw it away.
+      // Re-decoding the still frame is skipped when the live scanner
+      // already found one: a downscaled preview can decode fine while the
+      // full-resolution capture of that same instant sometimes doesn't.
       setBusy("analyzing");
       const dataUrl = await readAsDataUrl(file);
-      const qr = isPdf ? null : await readQrFromImage(file);
+      const qr = preDecodedQr !== undefined ? preDecodedQr : isPdf ? null : await readQrFromImage(file);
       let extractedList: ExtractedPayment[] = [];
       try {
         extractedList = await extract({ data: { dataUrl, filename: file.name, lang } });
@@ -255,7 +258,7 @@ export function ImportDocumentButton({ className }: { className?: string }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ScanDialog open={scanOpen} onOpenChange={setScanOpen} onCapture={(file) => void handleFile(file)} />
+      <ScanDialog open={scanOpen} onOpenChange={setScanOpen} onCapture={(file, qr) => void handleFile(file, qr)} />
 
       <PremiumDialog
         open={paywall}

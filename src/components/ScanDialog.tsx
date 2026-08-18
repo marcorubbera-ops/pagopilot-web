@@ -4,12 +4,18 @@ import jsQR from "jsqr";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useI18n } from "@/lib/i18n";
+import { parsePagoPaQr, type PagoPaQr } from "@/lib/pagopa-qr";
 
 type ScanDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Receives the captured frame as a JPEG file (bill photo or QR frame). */
-  onCapture: (file: File) => void;
+  /**
+   * Receives the captured frame as a JPEG file (bill photo or QR frame).
+   * `qr` is already-decoded when the live scan found a code — re-decoding
+   * the captured still frame is unreliable (a downscaled preview frame can
+   * decode fine while the full-resolution capture of the same moment doesn't).
+   */
+  onCapture: (file: File, qr?: PagoPaQr | null) => void;
 };
 
 /**
@@ -51,14 +57,14 @@ export function ScanDialog({ open, onOpenChange, onCapture }: ScanDialogProps) {
   }, []);
 
   const finish = useCallback(
-    (name: string) => {
+    (name: string, qr?: PagoPaQr | null) => {
       if (doneRef.current) return;
       const file = frameToFile(name);
       if (!file) return;
       doneRef.current = true;
       stop();
       onOpenChange(false);
-      onCapture(file);
+      onCapture(file, qr);
     },
     [frameToFile, onCapture, onOpenChange, stop],
   );
@@ -103,7 +109,7 @@ export function ScanDialog({ open, onOpenChange, onCapture }: ScanDialogProps) {
               const code = jsQR(data, canvas.width, canvas.height, { inversionAttempts: "attemptBoth" });
               if (code?.data) {
                 setFound(true);
-                finish("scan-qr.jpg");
+                finish("scan-qr.jpg", parsePagoPaQr(code.data));
                 return;
               }
             }
