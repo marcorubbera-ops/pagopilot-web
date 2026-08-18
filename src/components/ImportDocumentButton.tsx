@@ -126,13 +126,19 @@ export function ImportDocumentButton({ className }: { className?: string }) {
       if (uploadError) throw new Error(uploadError.message);
       setUpload({ path, kind: isPdf ? "pdf" : "image" });
 
-      // Photos and PDFs both go through AI extraction.
+      // Photos and PDFs both go through AI extraction. A QR code, when
+      // present, is decoded locally and is already a complete, reliable
+      // result on its own — so a failed AI call must not throw it away.
       setBusy("analyzing");
       const dataUrl = await readAsDataUrl(file);
-      const [extractedList, qr] = await Promise.all([
-        extract({ data: { dataUrl, filename: file.name, lang } }),
-        isPdf ? Promise.resolve(null) : readQrFromImage(file),
-      ]);
+      const qr = isPdf ? null : await readQrFromImage(file);
+      let extractedList: ExtractedPayment[] = [];
+      try {
+        extractedList = await extract({ data: { dataUrl, filename: file.name, lang } });
+      } catch (error) {
+        console.error("AI extraction failed:", error);
+        if (!qr) throw error;
+      }
 
       if (extractedList.length > 1) {
         // Multiple distinct payments in one document (e.g. several
