@@ -135,7 +135,6 @@ const google = async () => {
       toast.error(authErrorMessage(error, t));
       return;
     }
-    console.log("[oauth-debug] authorize url:", data.url);
     if (data.url) await Browser.open({ url: data.url });
     return;
   }
