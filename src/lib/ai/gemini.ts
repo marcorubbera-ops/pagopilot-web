@@ -89,6 +89,16 @@ function extractJson(raw: string): unknown {
  * payments, categories, etc. Callers are responsible for validating the
  * shape of the returned value (e.g. with Zod).
  */
+/** Gemini's own transient-overload/rate-limit statuses — worth one retry, unlike a bad prompt or malformed input. */
+function isTransientStatus(err: unknown): boolean {
+  const status = (err as { status?: number } | null)?.status;
+  return status === 429 || status === 500 || status === 503 || status === 504;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function extractPaymentWithGemini(
   input: ExtractPaymentWithGeminiInput,
 ): Promise<unknown> {
@@ -99,46 +109,52 @@ export async function extractPaymentWithGemini(
   console.log("Mime type:", mimeType);
   console.log("========================================");
 
-  try {
-    const response = await gemini.models.generateContent({
-      model: MODEL,
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              inlineData: {
-                mimeType,
-                data,
+  const attempts = 3;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const response = await gemini.models.generateContent({
+        model: MODEL,
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                inlineData: {
+                  mimeType,
+                  data,
+                },
               },
-            },
-            {
-              text: input.userPrompt,
-            },
-          ],
+              {
+                text: input.userPrompt,
+              },
+            ],
+          },
+        ],
+        config: {
+          systemInstruction: input.systemPrompt,
+          responseMimeType: "application/json",
+          temperature: 0,
         },
-      ],
-      config: {
-        systemInstruction: input.systemPrompt,
-        responseMimeType: "application/json",
-        temperature: 0,
-      },
-    });
+      });
 
-    const raw = response.text ?? "";
+      const raw = response.text ?? "";
 
-    console.log("========== GEMINI RESPONSE ==========");
-    console.log(raw);
-    console.log("=====================================");
+      console.log("========== GEMINI RESPONSE ==========");
+      console.log(raw);
+      console.log("=====================================");
 
-    return extractJson(raw);
-  } catch (err) {
-    console.error("");
-    console.error("========== GEMINI ERROR ==========");
-    console.error(err);
-    console.error("===================================");
-    console.error("");
+      return extractJson(raw);
+    } catch (err) {
+      console.error("");
+      console.error(`========== GEMINI ERROR (attempt ${attempt}/${attempts}) ==========`);
+      console.error(err);
+      console.error("===================================");
+      console.error("");
 
-    throw err;
+      if (attempt === attempts || !isTransientStatus(err)) throw err;
+      await sleep(attempt * 1000);
+    }
   }
+
+  throw new Error("unreachable");
 }
