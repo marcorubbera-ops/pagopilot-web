@@ -196,7 +196,13 @@ function StatsPage() {
                       strokeWidth={2}
                     >
                       {categoryChartData.map((entry) => (
-                        <RechartsPrimitive.Cell key={entry.id} fill={`var(--color-${entry.id})`} />
+                        // A raw `fill="var(...)"` SVG attribute doesn't reliably
+                        // resolve CSS custom properties on Safari/WebKit (renders
+                        // solid black) — `style` does, on every engine.
+                        <RechartsPrimitive.Cell
+                          key={entry.id}
+                          style={{ fill: `var(--color-${entry.id})` }}
+                        />
                       ))}
                     </RechartsPrimitive.Pie>
                   </RechartsPrimitive.PieChart>
