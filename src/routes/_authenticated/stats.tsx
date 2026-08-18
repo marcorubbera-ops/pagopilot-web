@@ -3,10 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Crown, Download } from "lucide-react";
+import * as RechartsPrimitive from "recharts";
 import { AppShell } from "@/components/AppShell";
 import { ExportMenu } from "@/components/ExportMenu";
 import { PremiumDialog } from "@/components/PremiumDialog";
 import { Button } from "@/components/ui/button";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { useI18n } from "@/lib/i18n";
 import { listPayments } from "@/lib/payments.functions";
 import { getProfile } from "@/lib/profile.functions";
@@ -89,6 +91,19 @@ function StatsPage() {
       .sort((a, b) => b[1] - a[1]);
   }, [rows]);
 
+  const categoryChartData = useMemo(
+    () => byCategory.map(([id, total]) => ({ id, total })),
+    [byCategory],
+  );
+
+  const categoryChartConfig = useMemo<ChartConfig>(() => {
+    const config: ChartConfig = {};
+    byCategory.forEach(([id], index) => {
+      config[id] = { label: categoryLabel(t, id), color: `var(--color-chart-${(index % 5) + 1})` };
+    });
+    return config;
+  }, [byCategory, t]);
+
   const byMonth = useMemo(() => {
     const months: { label: string; total: number }[] = [];
     const now = new Date();
@@ -153,6 +168,39 @@ function StatsPage() {
             <>
               <section className="ios-card mb-5 p-4">
                 <h2 className="mb-3 text-[15px] font-semibold">{t("stats.byCategory")}</h2>
+                <ChartContainer config={categoryChartConfig} className="mx-auto mb-4 aspect-square max-h-64">
+                  <RechartsPrimitive.PieChart>
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          hideLabel
+                          formatter={(value, name) => (
+                            <div className="flex w-full items-center justify-between gap-3">
+                              <span className="text-muted-foreground">
+                                {categoryLabel(t, String(name))}
+                              </span>
+                              <span className="font-mono font-medium tabular-nums text-foreground">
+                                {formatAmount(Number(value), lang)}
+                              </span>
+                            </div>
+                          )}
+                        />
+                      }
+                    />
+                    <RechartsPrimitive.Pie
+                      data={categoryChartData}
+                      dataKey="total"
+                      nameKey="id"
+                      innerRadius={55}
+                      outerRadius={90}
+                      strokeWidth={2}
+                    >
+                      {categoryChartData.map((entry) => (
+                        <RechartsPrimitive.Cell key={entry.id} fill={`var(--color-${entry.id})`} />
+                      ))}
+                    </RechartsPrimitive.Pie>
+                  </RechartsPrimitive.PieChart>
+                </ChartContainer>
                 <ul className="space-y-3">
                   {byCategory.map(([id, total]) => (
                     <li key={id}>

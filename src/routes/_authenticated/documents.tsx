@@ -10,9 +10,11 @@ import { ListSection, PaymentRow } from "@/components/PaymentRow";
 import { QuickAddDialog } from "@/components/QuickAddDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createPayment, listPayments } from "@/lib/payments.functions";
 import { useI18n, type Translate } from "@/lib/i18n";
 import {
+  CATEGORY_IDS,
   categoryLabel,
   effectiveStatus,
   formatAmount,
@@ -21,6 +23,7 @@ import {
 } from "@/lib/payments";
 
 const FILTERS = ["all", "open", "soon", "expired", "paid", "month", "year"] as const;
+const ALL_CATEGORIES = "all";
 
 type FilterId = (typeof FILTERS)[number];
 
@@ -36,8 +39,9 @@ export const Route = createFileRoute("/_authenticated/documents")({
       { property: "og:description", content: "Il tuo archivio di pagamenti sempre ricercabile." },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { filter: FilterId; category?: string } => ({
     filter: z.enum(FILTERS).catch("all").parse(search["filter"] ?? "all"),
+    category: z.string().optional().catch(undefined).parse(search["category"]),
   }),
   component: DocumentsPage,
 });
@@ -49,9 +53,11 @@ function DocumentsPage() {
   const queryClient = useQueryClient();
   const { t, lang } = useI18n();
   const [query, setQuery] = useState("");
-  const { filter } = Route.useSearch();
+  const { filter, category } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const setFilter = (next: FilterId) => void navigate({ search: { filter: next } });
+  const setFilter = (next: FilterId) => void navigate({ search: (prev) => ({ ...prev, filter: next }) });
+  const setCategory = (next: string) =>
+    void navigate({ search: (prev) => ({ ...prev, category: next === ALL_CATEGORIES ? undefined : next }) });
 
   const { data: payments, isLoading } = useQuery({
     queryKey: ["payments"],
@@ -68,8 +74,8 @@ function DocumentsPage() {
   });
 
   const results = useMemo(
-    () => filterPayments(payments ?? [], query, filter, t),
-    [payments, query, filter, t],
+    () => filterPayments(payments ?? [], query, filter, category, t),
+    [payments, query, filter, category, t],
   );
   const total = results.reduce((sum, payment) => sum + Number(payment.amount), 0);
 
@@ -91,18 +97,33 @@ function DocumentsPage() {
         />
       }
     >
-      <div className="relative mb-4">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={t("docs.search")}
-          className="pl-9"
-          aria-label={t("docs.title")}
-        />
+      <div className="mb-4 flex gap-2">
+        <div className="relative flex-1">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("docs.search")}
+            className="pl-9"
+            aria-label={t("docs.title")}
+          />
+        </div>
+        <Select value={category ?? ALL_CATEGORIES} onValueChange={setCategory}>
+          <SelectTrigger className="w-auto shrink-0" aria-label={t("docs.category.all")}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_CATEGORIES}>{t("docs.category.all")}</SelectItem>
+            {CATEGORY_IDS.map((id) => (
+              <SelectItem key={id} value={id}>
+                {categoryLabel(t, id)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="-mx-5 mb-5 flex gap-2 overflow-x-auto px-5 pb-1">
@@ -146,12 +167,14 @@ function filterPayments(
   payments: Payment[],
   query: string,
   filter: FilterId,
+  category: string | undefined,
   t: Translate,
 ): Payment[] {
   const needle = query.trim().toLowerCase();
   const now = new Date();
 
   return payments.filter((payment) => {
+    if (category && payment.category !== category) return false;
     const status = effectiveStatus(payment);
     if (filter === "open" && (status === "paid" || status === "archived" || status === "cancelled")) {
       return false;

@@ -136,7 +136,7 @@ function TabBar() {
           <li key={to} className="flex-1">
             <Link
               to={to}
-              className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors"
+              className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground transition active:scale-90"
               activeProps={{ className: "text-primary" }}
             >
               <Icon
