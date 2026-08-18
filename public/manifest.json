@@ -1,0 +1,23 @@
+{
+  "name": "PagoPilot",
+  "short_name": "PagoPilot",
+  "description": "Bollette, avvisi e tasse in un unico posto, con promemoria prima di ogni scadenza.",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#F2F2F7",
+  "theme_color": "#2F6FED",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
